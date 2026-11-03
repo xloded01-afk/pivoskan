@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="picker_brand">ПИВОСКАН</string>
+    <string name="picker_title">Где сегодня\nдешевле?</string>
+    <string name="picker_subtitle">Цены из официальных каталогов Магнита и Fix Price для выбранного города</string>
+    <string name="picker_city_hint">Выберите город</string>
+    <string name="picker_find_beer">Найти пиво</string>
+    <string name="picker_demo_note">Для загрузки реальных цен нужен интернет. Доступность зависит от города и каталога.</string>
+    <string name="picker_change_city_title">Выберите ваш город</string>
+    <string name="picker_apply_city">Выбрать город</string>
+</resources>

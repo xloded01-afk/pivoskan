@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="refresh_prices">Обновить цены</string>
+    <string name="live_initial">Получаем цены из магазинов</string>
+    <string name="live_updated">Получено %s · по данным сайтов</string>
+    <string name="live_cached">Есть сохранённые цены · даты в карточках</string>
+    <string name="live_cached_item">Сохранено: %s</string>
+    <string name="live_loading">Обновление…</string>
+    <string name="source_button">Источники %1$d/%2$d</string>
+    <string name="sources_title">Откуда цены</string>
+    <string name="source_loading">Получение данных…</string>
+    <string name="source_available">Загружено предложений: %d</string>
+    <string name="source_empty">Для этого города или магазина предложения не получены</string>
+    <string name="source_blocked">Автоматическая загрузка пока недоступна. Можно открыть официальный каталог.</string>
+    <string name="source_error">Не удалось получить данные. Проверьте интернет и повторите обновление.</string>
+    <string name="source_cached">Показаны сохранённые цены: %d предложений. Обновить источник не удалось.</string>
+    <string name="source_line">%1$s — %2$s</string>
+    <string name="source_more">Проверить цены и условия на сайте магазина</string>
+    <string name="source_open">Открыть каталог</string>
+    <string name="source_scope_store">Цена выбранного магазина</string>
+    <string name="source_scope_city">Каталог города · по адресам цены могут отличаться</string>
+    <string name="source_scope_address">%1$s\n%2$s</string>
+    <string name="source_meta">%1$s · %2$s</string>
+    <string name="store_choose">Магнит: выбрать магазин</string>
+    <string name="store_selected">Магнит: %s</string>
+    <string name="store_dialog">Магнит · найденные магазины</string>
+    <string name="live_empty_title">Цены пока не получены</string>
+    <string name="live_empty_subtitle">Откройте «Источники», чтобы узнать причину. Нужен интернет; тестовые цены не подставляются.</string>
+    <string name="live_loading_title">Загружаем реальные цены</string>
+    <string name="live_loading_subtitle">Запрашиваем каталоги выбранного города. Это может занять некоторое время.</string>
+    <string name="live_retry">Повторить загрузку</string>
+    <string name="live_card_price">По карте: %s</string>
+    <string name="live_price_range">от %1$s до %2$s</string>
+    <string name="live_volume_unknown">Объём в описании товара</string>
+    <string name="live_shop_required">Цены Магнита относятся к адресу выбранного магазина</string>
+</resources>

@@ -1,0 +1,23 @@
+{
+  "items": [
+    {
+      "id": "8000109721",
+      "name": "Пиво светлое пастеризованное Feilong 4.3% 430мл",
+      "seoCode": "feilong_pivo_svetloe_past_4_3_0_43l_zh_b",
+      "storeCode": "502731",
+      "price": 4899,
+      "quantity": 6,
+      "promotion": {"discountPercent": null, "endDate": "2027-04-21T23:59:59Z", "isPromotion": true, "oldPrice": null}
+    },
+    {
+      "id": "8000107462",
+      "name": "Светлый пивной напиток пастеризованный Баварское Бочкарев 4.3% 430мл",
+      "seoCode": "bochkarev_bavarskoe_piv_nap_svet_past_4_3_0_43l_zh_b",
+      "storeCode": "502731",
+      "price": 5999,
+      "quantity": 93,
+      "promotion": {"discountPercent": null, "endDate": "2026-12-09T23:59:59Z", "isPromotion": true, "oldPrice": null}
+    }
+  ],
+  "pagination": {"hasMore": true, "limit": 50, "nextOffset": 52, "offset": 0, "totalCount": 197}
+}

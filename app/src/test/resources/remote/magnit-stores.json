@@ -1,0 +1,30 @@
+{
+  "data": [
+    {
+      "address": "Московская обл, Балашиха, ул Кудаковского, 11, пом. 9-11,16-29,40,49-58, пом. 2, ком. 1-14",
+      "cityFiasId": "27c5bc66-61bf-4a17-b0cd-ca0eb64192d6",
+      "coordinates": {"latitude": 55.820726, "longitude": 37.971841},
+      "externalId": {"owner": "OWNER_MAGNIT", "storeCode": "502731"},
+      "isActive": true,
+      "status": "STATUS_ACTIVE",
+      "storeType": "STORE_TYPE_MM",
+      "storeTypeV2": "MM",
+      "timetableList": [
+        {"key": "WORKING_TIMETABLE_TYPE_STORE", "value": {
+          "is24hOpen": false,
+          "weeklySchedule": {
+            "monday": {"dailySchedule": {"closingTime": "23:00", "openingTime": "08:00"}, "isDayOff": false},
+            "tuesday": {"dailySchedule": {"closingTime": "23:00", "openingTime": "08:00"}, "isDayOff": false},
+            "wednesday": {"dailySchedule": {"closingTime": "23:00", "openingTime": "08:00"}, "isDayOff": false},
+            "thursday": {"dailySchedule": {"closingTime": "23:00", "openingTime": "08:00"}, "isDayOff": false},
+            "friday": {"dailySchedule": {"closingTime": "23:00", "openingTime": "08:00"}, "isDayOff": false},
+            "saturday": {"dailySchedule": {"closingTime": "23:00", "openingTime": "08:00"}, "isDayOff": false},
+            "sunday": {"dailySchedule": {"closingTime": "23:00", "openingTime": "08:00"}, "isDayOff": false}
+          }
+        }},
+        {"key": "WORKING_TIMETABLE_TYPE_PICKUP", "value": {"is24hOpen": false}}
+      ]
+    }
+  ],
+  "totalCount": 63
+}

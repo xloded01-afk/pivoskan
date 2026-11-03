@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="bg">#0E1116</color>
+    <color name="surface">#151A21</color>
+    <color name="surface_variant">#1C232C</color>
+    <color name="outline">#2A323D</color>
+    <color name="gold">#F5B54A</color>
+    <color name="gold_container">#3A2A0C</color>
+    <color name="on_gold">#3A2200</color>
+    <color name="on_gold_container">#FFD79A</color>
+    <color name="text_primary">#F3F1EC</color>
+    <color name="text_secondary">#9AA6B4</color>
+    <color name="success">#4ADE80</color>
+    <color name="discount_bg">#3A2A0C</color>
+    <color name="success_container">#1F4ADE80</color>
+    <color name="on_success">#082416</color>
+    <color name="error">#FFB4AB</color>
+    <color name="on_error">#690005</color>
+    <color name="picker_glow">#24F5B54A</color>
+    <color name="glass_beer">#F5B54A</color>
+    <color name="glass_foam">#FFF6DF</color>
+    <color name="glass_highlight">#B3FFFFFF</color>
+    <color name="map_overlay_start">#F2151A21</color>
+    <color name="map_overlay_end">#00151A21</color>
+    <color name="store_magnit">#D64545</color>
+    <color name="store_dixy">#1F8A70</color>
+    <color name="store_pyaterochka">#5BBF3A</color>
+    <color name="store_fixprice">#4B7BEC</color>
+</resources>

@@ -1,0 +1,108 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.core.widget.NestedScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/cityPickerRoot"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@drawable/bg_picker_glow"
+    android:clipToPadding="false"
+    android:fillViewport="true"
+    android:scrollbars="none">
+
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:paddingStart="@dimen/screen_padding"
+        android:paddingEnd="@dimen/screen_padding">
+
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="@dimen/space_xl"
+            android:layout_marginBottom="@dimen/space_xl"
+            android:gravity="center_horizontal"
+            android:orientation="vertical"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent"
+            app:layout_constraintWidth_max="@dimen/picker_max_width">
+
+            <ru.pivoskan.app.ui.BeerGlassView
+                android:id="@+id/beerGlass"
+                android:layout_width="@dimen/picker_glass_size"
+                android:layout_height="@dimen/picker_glass_size"
+                android:focusable="false"
+                android:importantForAccessibility="no" />
+
+            <com.google.android.material.textview.MaterialTextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/space_sm"
+                android:gravity="center"
+                android:text="@string/picker_brand"
+                android:textAppearance="@style/TextAppearance.Pivoskan.Brand" />
+
+            <com.google.android.material.textview.MaterialTextView
+                android:id="@+id/pickerTitle"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/space_lg"
+                android:gravity="center"
+                android:text="@string/picker_title"
+                android:textAppearance="@style/TextAppearance.Pivoskan.Display" />
+
+            <com.google.android.material.textview.MaterialTextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/space_md"
+                android:gravity="center"
+                android:text="@string/picker_subtitle"
+                android:textAppearance="@style/TextAppearance.Pivoskan.Body"
+                android:textColor="@color/text_secondary" />
+
+            <com.google.android.material.textfield.TextInputLayout
+                android:id="@+id/cityInput"
+                style="@style/Widget.Pivoskan.CityInput"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/space_2xl"
+                android:hint="@string/picker_city_hint">
+
+                <com.google.android.material.textfield.MaterialAutoCompleteTextView
+                    android:id="@+id/cityDropdown"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:inputType="none"
+                    android:importantForAutofill="no"
+                    android:maxLines="1"
+                    android:minHeight="@dimen/picker_field_height"
+                    android:paddingStart="@dimen/space_lg"
+                    android:paddingTop="@dimen/space_lg"
+                    android:paddingEnd="@dimen/space_lg"
+                    android:paddingBottom="@dimen/space_lg"
+                    android:saveEnabled="false"
+                    android:textAppearance="@style/TextAppearance.Pivoskan.Body"
+                    android:textColor="@color/text_primary" />
+            </com.google.android.material.textfield.TextInputLayout>
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/findBeerButton"
+                style="@style/Widget.Pivoskan.Button"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/space_lg"
+                android:enabled="false"
+                android:text="@string/picker_find_beer" />
+
+            <com.google.android.material.textview.MaterialTextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/space_xl"
+                android:gravity="center"
+                android:text="@string/picker_demo_note"
+                android:textAppearance="@style/TextAppearance.Pivoskan.Caption" />
+
+        </LinearLayout>
+    </androidx.constraintlayout.widget.ConstraintLayout>
+</androidx.core.widget.NestedScrollView>

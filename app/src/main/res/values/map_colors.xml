@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="map_block">#EFE7D8</color>
+    <color name="map_road">#FFFCF6</color>
+    <color name="map_park">#CCDFC4</color>
+    <color name="map_river">#ADD3E1</color>
+    <color name="map_label">#5F635C</color>
+    <color name="map_metro">#9B3948</color>
+    <color name="map_pin_ink">#FFFFFF</color>
+</resources>

@@ -1,7 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
-    <!-- Offline app: no INTERNET / ACCESS_NETWORK_STATE permissions on purpose. -->
+    <!-- Read official catalogs directly from the phone over HTTPS. -->
+    <uses-permission android:name="android.permission.INTERNET" />
 
     <application
         android:allowBackup="true"
@@ -10,8 +11,10 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.Pivoskan">
 
+        <activity android:name=".BeerDetailsActivity" android:exported="false" />
+        <activity android:name=".MainActivity" android:exported="false" android:windowSoftInputMode="adjustResize" />
         <activity
-            android:name=".MainActivity"
+            android:name=".CityPickerActivity"
             android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />

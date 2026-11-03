@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="change_city">Сменить</string>
+    <string name="search_hint">Марка пива, например, Жигули</string>
+    <string name="all_stores">Все</string>
+    <string name="sort_cheapest">Дешевле</string>
+    <string name="sort_discount">Скидки</string>
+    <string name="results_from">%1$s · от %2$s</string>
+    <string name="results_none">Нет предложений</string>
+    <plurals name="offer_count">
+        <item quantity="one">%d предложение</item>
+        <item quantity="few">%d предложения</item>
+        <item quantity="many">%d предложений</item>
+        <item quantity="other">%d предложения</item>
+    </plurals>
+    <string name="demo_caption">Цены официальных каталогов</string>
+    <string name="beer_volume_package">%1$s · %2$s</string>
+    <string name="discount_percent">−%d%%</string>
+    <string name="best_price">минимум</string>
+    <string name="savings_amount">экономия %s</string>
+    <string name="empty_title">Ничего не нашлось</string>
+    <string name="empty_subtitle">Попробуйте другую марку или выберите больше магазинов.</string>
+    <string name="reset_filters">Сбросить фильтры</string>
+    <string name="choose_theme">Тема оформления</string>
+    <string name="theme_system">Как в системе</string>
+    <string name="theme_light">Светлая</string>
+    <string name="theme_dark">Тёмная</string>
+    <string name="about_title">О данных</string>
+    <string name="about_message">Цены загружаются напрямую из официальных каталогов. Для обновления нужен интернет на телефоне; компьютер и отдельный сервер не требуются.\n\nМагнит: предложения выбранного магазина. Fix Price: каталог выбранного города, цены и наличие по адресам могут различаться. Цена по карте показана отдельно.\n\nДикси и Пятёрочка пока ограничивают автоматический доступ к товарам; их реальные цены в сравнении отсутствуют.\n\nПри сбое показываются только сохранённые реальные данные с датой. Подставных цен нет. Сравнение охватывает загруженные предложения, а не все магазины города. Совпадение товаров проверяется по точному нормализованному названию. Проверяйте условия, срок акции и наличие на сайте магазина.</string>
+    <string name="understood">Понятно</string>
+    <string name="offer_accessibility">%1$s, %2$s, %3$s, %4$s</string>
+    <string name="offer_open_accessibility">Открыть предложение</string>
+    <string name="offer_best_accessibility">Минимальная цена среди выбранных магазинов</string>
+    <string name="offer_discount_accessibility">Скидка %d%%</string>
+    <string name="city_accessibility">Город: %s</string>
+    <string name="sort_accessibility">Сортировка предложений</string>
+</resources>

@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <dimen name="type_display">34sp</dimen>
+    <dimen name="type_h1">26sp</dimen>
+    <dimen name="type_h2">20sp</dimen>
+    <dimen name="type_title">17sp</dimen>
+    <dimen name="type_body">15sp</dimen>
+    <dimen name="type_caption">13sp</dimen>
+    <dimen name="type_overline">11sp</dimen>
+    <dimen name="type_price">24sp</dimen>
+    <dimen name="type_brand">12sp</dimen>
+</resources>

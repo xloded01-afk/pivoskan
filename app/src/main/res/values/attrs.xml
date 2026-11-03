@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Optional per-view overrides; the global theme need not assign these. -->
+    <declare-styleable name="CityMapView">
+        <attr name="mapPark" format="color" />
+        <attr name="mapRiver" format="color" />
+        <attr name="mapRoad" format="color" />
+        <attr name="mapBlock" format="color" />
+    </declare-styleable>
+</resources>

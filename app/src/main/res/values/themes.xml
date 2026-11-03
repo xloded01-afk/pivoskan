@@ -1,18 +1,59 @@
 <?xml version="1.0" encoding="utf-8"?>
-<resources>
-    <!-- Placeholder theme; Task 2 expands it with the full design system. -->
-    <style name="Theme.Pivoskan" parent="Theme.Material3.DayNight.NoActionBar">
+<resources xmlns:tools="http://schemas.android.com/tools">
+    <style name="Theme.Pivoskan.Base" parent="Theme.Material3.DayNight.NoActionBar">
         <item name="colorPrimary">@color/gold</item>
         <item name="colorOnPrimary">@color/on_gold</item>
         <item name="colorPrimaryContainer">@color/gold_container</item>
         <item name="colorOnPrimaryContainer">@color/on_gold_container</item>
+        <item name="colorSecondary">@color/success</item>
+        <item name="colorOnSecondary">@color/on_success</item>
+        <item name="colorSecondaryContainer">@color/success_container</item>
+        <item name="colorOnSecondaryContainer">@color/success</item>
+        <item name="colorTertiary">@color/gold</item>
+        <item name="colorOnTertiary">@color/on_gold</item>
+        <item name="colorTertiaryContainer">@color/gold_container</item>
+        <item name="colorOnTertiaryContainer">@color/on_gold_container</item>
         <item name="colorSurface">@color/surface</item>
         <item name="colorSurfaceVariant">@color/surface_variant</item>
         <item name="colorOnSurface">@color/text_primary</item>
         <item name="colorOnSurfaceVariant">@color/text_secondary</item>
         <item name="colorOutline">@color/outline</item>
+        <item name="colorOutlineVariant">@color/outline</item>
+        <item name="colorSurfaceContainerLowest">@color/bg</item>
+        <item name="colorSurfaceContainerLow">@color/surface</item>
+        <item name="colorSurfaceContainer">@color/surface</item>
+        <item name="colorSurfaceContainerHigh">@color/surface_variant</item>
+        <item name="colorSurfaceContainerHighest">@color/surface_variant</item>
+        <item name="colorError">@color/error</item>
+        <item name="colorOnError">@color/on_error</item>
         <item name="android:colorBackground">@color/bg</item>
+        <item name="colorOnBackground">@color/text_primary</item>
+        <item name="android:windowBackground">@color/bg</item>
+        <item name="android:colorAccent">@color/gold</item>
+        <item name="android:textColorPrimary">@color/text_primary</item>
+        <item name="android:textColorSecondary">@color/text_secondary</item>
+        <item name="android:fontFamily">sans-serif</item>
+        <item name="fontFamily">sans-serif</item>
+        <item name="textAppearanceDisplayLarge">@style/TextAppearance.Pivoskan.Display</item>
+        <item name="textAppearanceHeadlineLarge">@style/TextAppearance.Pivoskan.H1</item>
+        <item name="textAppearanceTitleLarge">@style/TextAppearance.Pivoskan.H2</item>
+        <item name="textAppearanceTitleMedium">@style/TextAppearance.Pivoskan.Title</item>
+        <item name="textAppearanceBodyLarge">@style/TextAppearance.Pivoskan.Body</item>
+        <item name="textAppearanceBodyMedium">@style/TextAppearance.Pivoskan.Body</item>
+        <item name="textAppearanceBodySmall">@style/TextAppearance.Pivoskan.Caption</item>
+        <item name="textAppearanceLabelSmall">@style/TextAppearance.Pivoskan.Overline</item>
+        <item name="materialButtonStyle">@style/Widget.Pivoskan.Button</item>
+        <item name="materialButtonOutlinedStyle">@style/Widget.Pivoskan.Button.Outlined</item>
+        <item name="textInputOutlinedExposedDropdownMenuStyle">@style/Widget.Pivoskan.CityInput</item>
+        <item name="materialCardViewStyle">@style/Widget.Pivoskan.Card</item>
+        <item name="chipStyle">@style/Widget.Pivoskan.Chip</item>
         <item name="android:statusBarColor">@android:color/transparent</item>
         <item name="android:navigationBarColor">@android:color/transparent</item>
+        <item name="android:enforceStatusBarContrast" tools:targetApi="q">false</item>
+        <item name="android:enforceNavigationBarContrast" tools:targetApi="q">false</item>
+    </style>
+
+    <style name="Theme.Pivoskan" parent="Theme.Pivoskan.Base">
+        <item name="android:windowLightStatusBar">true</item>
     </style>
 </resources>

@@ -10,3 +10,5 @@ build/
 *.jks
 keystore.properties
 .superpowers/
+.kotlin/
+/dist/

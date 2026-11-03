@@ -11,6 +11,12 @@ val keystorePropertiesFile = rootProject.file("keystore.properties")
 val keystoreProperties = Properties().apply {
     if (keystorePropertiesFile.exists()) {
         keystorePropertiesFile.inputStream().use { load(it) }
+        listOf("storeFile", "storePassword", "keyAlias", "keyPassword").forEach { key ->
+            require(!getProperty(key).isNullOrBlank()) { "Missing $key in keystore.properties" }
+        }
+        require(rootProject.file(getProperty("storeFile")).isFile) {
+            "Signing keystore does not exist: ${getProperty("storeFile") }"
+        }
     }
 }
 
@@ -22,8 +28,8 @@ android {
         applicationId = "ru.pivoskan.app"
         minSdk = 24
         targetSdk = 35
-        versionCode = 1
-        versionName = "1.0"
+        versionCode = 2
+        versionName = "1.1"
     }
 
     signingConfigs {
@@ -65,6 +71,8 @@ android {
 }
 
 dependencies {
+    implementation("com.google.code.gson:gson:2.10.1")
+    implementation("androidx.lifecycle:lifecycle-viewmodel-ktx:2.6.2")
     implementation("androidx.core:core-ktx:1.13.1")
     implementation("androidx.appcompat:appcompat:1.7.0")
     implementation("androidx.activity:activity-ktx:1.9.3")
@@ -74,4 +82,13 @@ dependencies {
     implementation("androidx.core:core-splashscreen:1.0.1")
 
     testImplementation("junit:junit:4.13.2")
+}
+
+// Optional integration check against public catalogs. Unit tests remain deterministic/offline.
+tasks.register<JavaExec>("liveCatalogSmoke") {
+    group = "verification"
+    description = "Read official Magnit and Fix Price beer catalogs for Balashikha"
+    dependsOn("compileDebugUnitTestKotlin", "processDebugUnitTestJavaRes")
+    mainClass.set("ru.pivoskan.app.data.LiveCatalogSmoke")
+    doFirst { classpath = tasks.named<Test>("testDebugUnitTest").get().classpath }
 }

@@ -1,0 +1,126 @@
+[
+  {
+    "id": 1460027,
+    "sku": "1460027",
+    "title": "Пиво \"Барное\", Жигули, безалкогольное, 0,45 л",
+    "isFresh": false,
+    "isNew": false,
+    "isPromo": false,
+    "adult": true,
+    "isSeason": false,
+    "isHit": false,
+    "isQRMark": false,
+    "forbidden": false,
+    "active": true,
+    "image": 696924463,
+    "images": [
+      {
+        "id": 696924463,
+        "title": null,
+        "src": "https://img.fix-price.com/insecure/rs:fit:800:800/plain/pim/images/_default_upload_bucket/1460027.jpg"
+      }
+    ],
+    "resources": [
+      {
+        "src": "https://img.fix-price.com/insecure/rs:fit:800:800/plain/pim/images/_default_upload_bucket/1460027.jpg",
+        "videoType": null,
+        "link": null
+      }
+    ],
+    "unit": null,
+    "specialPrice": null,
+    "price": "49.50",
+    "unitPrice": "",
+    "minPrice": "49.50",
+    "maxPrice": "49.50",
+    "variantCount": 1,
+    "variantId": null,
+    "url": "produkty-i-napitki/p-1460027-pivo-barnoe-jiguli-bezalkogolnoe-045-l",
+    "inStock": 11,
+    "brand": {
+      "id": 909,
+      "title": "Жигули Барное"
+    },
+    "category": {
+      "id": 2004,
+      "title": "Продукты и напитки",
+      "parentCategory": null
+    },
+    "badges": [],
+    "availabilityType": "primary",
+    "feedback": {
+      "rating": 5,
+      "ratings": {
+        "count": 1,
+        "display": "1"
+      }
+    }
+  },
+  {
+    "id": 1430168,
+    "sku": "1430168",
+    "title": "Светлое пиво \"Пильзенское\", Хамовники, 4,8%, 0,45 л",
+    "isFresh": false,
+    "isNew": false,
+    "isPromo": false,
+    "adult": true,
+    "isSeason": false,
+    "isHit": false,
+    "isQRMark": false,
+    "forbidden": false,
+    "active": true,
+    "image": 696878794,
+    "images": [
+      {
+        "id": 696878794,
+        "title": null,
+        "src": "https://img.fix-price.com/insecure/rs:fit:800:800/plain/pim/images/_default_upload_bucket/722ef25c871d5eabc76e5f4728b16982.jpg"
+      }
+    ],
+    "resources": [
+      {
+        "src": "https://img.fix-price.com/insecure/rs:fit:800:800/plain/pim/images/_default_upload_bucket/722ef25c871d5eabc76e5f4728b16982.jpg",
+        "videoType": null,
+        "link": null
+      }
+    ],
+    "unit": null,
+    "specialPrice": {
+      "price": "84",
+      "active_to": "2999-12-31 23:59:59"
+    },
+    "price": "87.00",
+    "unitPrice": "",
+    "minPrice": "87.00",
+    "maxPrice": "87.00",
+    "variantCount": 1,
+    "variantId": null,
+    "url": "spets-tsena-po-karte/p-1430168-svetloe-pivo-pilzenskoe-hamovniki-48-045-l",
+    "inStock": 14,
+    "brand": {
+      "id": 915,
+      "title": "ХАМОВНИКИ"
+    },
+    "category": {
+      "id": 2528,
+      "title": "Спец цена по карте",
+      "parentCategory": null
+    },
+    "badges": [
+      {
+        "id": 8,
+        "alias": "special_price",
+        "title": "спец цена",
+        "color": "#FF1E2D"
+      }
+    ],
+    "availabilityType": "primary",
+    "feedback": {
+      "rating": 0,
+      "ratings": {
+        "count": 0,
+        "display": null
+      }
+    }
+  }
+]
