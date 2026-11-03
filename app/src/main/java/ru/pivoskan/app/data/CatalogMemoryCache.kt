@@ -17,7 +17,13 @@ class CatalogMemoryCache(private val disk: CatalogCache) : CatalogCache {
     }
 
     @Synchronized override fun write(snapshot: CatalogSnapshot) {
-        remember(snapshot)
+        if (Thread.currentThread().isInterrupted) throw InterruptedException()
         disk.write(snapshot)
+        remember(snapshot)
+    }
+
+    /** All access takes the memory monitor before the backing disk monitor. */
+    @Synchronized fun update(cityId: String, change: (CatalogSnapshot?) -> CatalogSnapshot) {
+        write(change(read(cityId)))
     }
 }

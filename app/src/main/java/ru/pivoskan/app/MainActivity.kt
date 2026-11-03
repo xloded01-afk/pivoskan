@@ -8,6 +8,7 @@ import android.os.Parcelable
 import android.view.View
 import android.view.inputmethod.EditorInfo
 import androidx.activity.enableEdgeToEdge
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.app.AppCompatDelegate
 import androidx.core.view.ViewCompat
@@ -51,6 +52,13 @@ class MainActivity : AppCompatActivity() {
     private lateinit var catalog: CatalogViewModel
     private var snapshot: CatalogSnapshot? = null
     private var loading = false
+    private val catalogBrowser = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) {
+        if (::catalog.isInitialized) {
+            // Always reread: a successful save can outlive a browser activity's rotation.
+            catalog.restoreImported(cityId)
+            catalog.load(cityId, force = true)
+        }
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         prefs = Prefs(this)
@@ -236,20 +244,28 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    private fun sourceDescription(source: SourceState): String = when (source.status) {
-        SourceStatus.LOADING -> getString(R.string.source_loading)
-        SourceStatus.AVAILABLE -> getString(R.string.source_available, source.offerCount)
-        SourceStatus.EMPTY -> getString(R.string.source_empty)
-        SourceStatus.BLOCKED -> getString(R.string.source_blocked)
-        SourceStatus.ERROR -> getString(R.string.source_error)
-        SourceStatus.CACHED -> getString(R.string.source_cached, source.offerCount)
+    private fun sourceDescription(source: SourceState): String {
+        if (source.storeId == "dixy") {
+            if (source.status == SourceStatus.CACHED) return getString(R.string.source_catalog_cached, source.offerCount)
+            if (source.status == SourceStatus.AVAILABLE) return getString(R.string.source_catalog_available, source.offerCount)
+        }
+        return when (source.status) {
+            SourceStatus.LOADING -> getString(R.string.source_loading)
+            SourceStatus.AVAILABLE -> getString(R.string.source_available, source.offerCount)
+            SourceStatus.EMPTY -> getString(R.string.source_empty)
+            SourceStatus.BLOCKED -> getString(R.string.source_blocked)
+            SourceStatus.ERROR -> getString(R.string.source_error)
+            SourceStatus.CACHED -> getString(R.string.source_cached, source.offerCount)
+            SourceStatus.CATALOG -> getString(R.string.source_catalog)
+        }
     }
 
     private fun showSources() {
         val states = CityCatalog.stores.map { store ->
             val status = snapshot?.sources?.firstOrNull { it.storeId == store.id }
                 ?: SourceState(store.id, if (loading && store.id in setOf("magnit", "fixprice")) SourceStatus.LOADING
-                    else if (store.id in setOf("dixy", "pyaterochka")) SourceStatus.BLOCKED else SourceStatus.ERROR)
+                    else if (store.id == "dixy") SourceStatus.CATALOG
+                    else if (store.id == "pyaterochka") SourceStatus.BLOCKED else SourceStatus.ERROR)
             getString(R.string.source_line, store.name, sourceDescription(status))
         }
         MaterialAlertDialogBuilder(this).setTitle(R.string.sources_title).setItems(states.toTypedArray()) { _, index ->
@@ -257,19 +273,27 @@ class MainActivity : AppCompatActivity() {
             val scope = when (store.id) {
                 "magnit" -> getString(R.string.source_scope_address, getString(R.string.source_scope_store), snapshot?.selectedShop?.address.orEmpty())
                 "fixprice" -> getString(R.string.source_scope_city)
+                "dixy" -> getString(R.string.source_catalog_scope)
                 else -> getString(R.string.source_blocked)
             }
             val url = when (store.id) {
                 "magnit" -> "https://magnit.ru/catalog/41183-pivo_kokteyli_alkogolcorenew" +
                     (snapshot?.selectedShop?.let { "?shopCode=${it.id}&shopType=1" } ?: "")
                 "fixprice" -> "https://fix-price.com/catalog/produkty-i-napitki/alkogolnaya-produktsiya"
-                "dixy" -> "https://dixy.ru/catalog/alkogolnye-napitki/"
+                "dixy" -> CatalogBrowserActivity.CATALOG_URL
                 else -> "https://5ka.ru/catalog/"
             }
-            MaterialAlertDialogBuilder(this).setTitle(store.name)
+            val dialog = MaterialAlertDialogBuilder(this).setTitle(store.name)
                 .setMessage(scope + "\n\n" + getString(R.string.source_more))
-                .setPositiveButton(R.string.source_open) { _, _ -> SourceLinks.open(this, url) }
-                .setNegativeButton(R.string.understood, null).show()
+                .setNegativeButton(R.string.understood, null)
+            if (store.id == "dixy") {
+                dialog.setPositiveButton(R.string.source_catalog_open) { _, _ ->
+                    catalog.pauseRefresh()
+                    catalogBrowser.launch(Intent(this, CatalogBrowserActivity::class.java)
+                        .putExtra(CatalogBrowserActivity.EXTRA_CITY, cityId))
+                }.setNeutralButton(R.string.source_open_external) { _, _ -> SourceLinks.open(this, url) }
+            } else dialog.setPositiveButton(R.string.source_open) { _, _ -> SourceLinks.open(this, url) }
+            dialog.show()
         }.setPositiveButton(R.string.understood, null).show()
     }
 

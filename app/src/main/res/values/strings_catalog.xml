@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="source_catalog">Загрузка через официальный каталог</string>
+    <string name="catalog_back">К списку цен</string>
+    <string name="catalog_title">Дикси · %s</string>
+    <string name="catalog_instructions">Выберите «Самовывоз» и магазин в городе %s на сайте. Дождитесь товаров и нажмите «Сохранить цены». Для остальных товаров откройте следующую страницу или «Показать ещё».</string>
+    <string name="catalog_save">Сохранить цены</string>
+    <string name="catalog_saving">Сохраняем цены…</string>
+    <string name="catalog_reload">Обновить страницу</string>
+    <string name="source_open_external">Открыть в браузере</string>
+    <string name="catalog_load_error">Каталог не загрузился. Проверьте интернет и обновите страницу через меню.</string>
+    <string name="catalog_not_saved">Цены не сохранены</string>
+    <string name="catalog_import_error">Выберите на сайте «Самовывоз» и магазин с адресом в городе %s. Откройте раздел «Пиво» и дождитесь карточек с ценами. Если сайт ограничил доступ или изменил каталог, сохранить цены пока не получится. Предыдущие цены сохранены.</string>
+    <string name="catalog_saved">Сохранено предложений с этой страницы: %d</string>
+    <string name="catalog_next_pages">Можно вернуться к сравнению или продолжить загрузку: откройте следующую страницу каталога либо «Показать ещё» и снова сохраните цены. Предыдущие страницы этого магазина сохранятся.</string>
+    <string name="catalog_continue">Продолжить загрузку</string>
+    <string name="source_catalog_open">Открыть и загрузить</string>
+    <string name="source_catalog_scope">Загрузите цены выбранного магазина через встроенный каталог. Сохраняются только загруженные страницы раздела «Пиво», с адресом и датой. Цены со специальным условием «по карте» пропускаются.</string>
+    <string name="source_catalog_cached">Сохранено предложений: %d. Даты в карточках; обновление — через «Открыть и загрузить».</string>
+    <string name="source_catalog_available">Сохранено предложений из каталога: %d</string>
+</resources>

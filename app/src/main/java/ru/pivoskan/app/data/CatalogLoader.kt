@@ -21,20 +21,20 @@ class CatalogLoader(
         val latestCity = cache.read(city.id)
         val previous = preferredShopId?.let { cache.readShop(city.id, it) }?.let { shopCache ->
             shopCache.copy(offers = shopCache.offers.filter { it.store.id == "magnit" } +
-                (latestCity?.offers ?: shopCache.offers).filter { it.store.id == "fixprice" })
+                (latestCity?.offers ?: shopCache.offers).filter { it.store.id != "magnit" })
         } ?: latestCity
         var shops = previous?.shops.orEmpty()
         var selected = previous?.selectedShop?.takeIf { preferredShopId == null || it.id == preferredShopId }
         val offers = previous?.offers.orEmpty().filter {
-            it.cityId == city.id && (it.store.id == "fixprice" || (it.store.id == "magnit" && it.shopId == selected?.id))
+            it.cityId == city.id && (it.store.id in setOf("fixprice", "dixy") || (it.store.id == "magnit" && it.shopId == selected?.id))
         }.map { it.copy(cached = true) }.toMutableList()
         val states = linkedMapOf(
             "magnit" to SourceState("magnit", SourceStatus.LOADING),
             "fixprice" to SourceState("fixprice", SourceStatus.LOADING),
-            "dixy" to SourceState("dixy", SourceStatus.BLOCKED),
+            "dixy" to SourceState("dixy", SourceStatus.CATALOG),
             "pyaterochka" to SourceState("pyaterochka", SourceStatus.BLOCKED)
         )
-        listOf("magnit", "fixprice").forEach { id ->
+        listOf("magnit", "fixprice", "dixy").forEach { id ->
             val count = offers.count { it.store.id == id }
             if (count > 0) states[id] = SourceState(id, SourceStatus.CACHED, count)
         }

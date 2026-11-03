@@ -17,6 +17,33 @@ class CatalogLoaderTest {
         override fun write(snapshot: CatalogSnapshot) { value = snapshot }
     }
 
+    private fun dixy() = offer().copy(id = "dixy-verified", store = CityCatalog.store("dixy")!!,
+        shopId = "dixy-350", address = "Московская обл, Балашиха, Гагарина, 30",
+        sourceUrl = "https://dixy.ru/product/pivo-2000005589/")
+
+    @Test fun `native refresh preserves imported Dixy prices with original timestamp`() {
+        val previous = CatalogSnapshot(city.id, shop, listOf(shop), listOf(dixy()), emptyList(), 1000)
+        val result = CatalogLoader(MemoryCache(previous), { listOf(shop) }, { _, _ -> listOf(offer()) },
+            { emptyList() }, { 2000 }).load(city, shop.id)
+        assertEquals(1000L, result.offers.single { it.store.id == "dixy" }.fetchedAt)
+        assertTrue(result.offers.single { it.store.id == "dixy" }.cached)
+        assertEquals(SourceStatus.CACHED, result.sources.single { it.storeId == "dixy" }.status)
+    }
+
+    @Test fun `Dixy cache roundtrip retains its own shop and rejects wrong city address`() {
+        val codec = SnapshotCodec()
+        val snapshot = CatalogSnapshot(city.id, shop, listOf(shop), listOf(dixy()), emptyList(), 1000)
+        assertEquals("dixy-350", codec.decode(codec.encode(snapshot), city.id)!!.offers.single().shopId)
+        assertNull(codec.decode(codec.encode(snapshot.copy(offers = listOf(dixy().copy(address = "Москва, Валовая, 20")))), city.id))
+        assertNull(codec.decode(codec.encode(snapshot.copy(offers = listOf(dixy().copy(sourceUrl = "https://dixy.ru.evil.test/product/1")))), city.id))
+    }
+
+    @Test fun `Dixy is available through catalog instead of hardcoded blocked`() {
+        val result = CatalogLoader(MemoryCache(), { emptyList() }, { _, _ -> emptyList() }, { emptyList() })
+            .load(city, null)
+        assertEquals(SourceStatus.CATALOG, result.sources.single { it.storeId == "dixy" }.status)
+    }
+
     @Test fun `one failed source does not discard successful real prices`() {
         val result = CatalogLoader(MemoryCache(), { listOf(shop) }, { _, _ -> listOf(offer()) },
             { throw SourceException() }, { 2000 }).load(city, null)

@@ -12,6 +12,7 @@
         android:theme="@style/Theme.Pivoskan">
 
         <activity android:name=".BeerDetailsActivity" android:exported="false" />
+        <activity android:name=".CatalogBrowserActivity" android:exported="false" android:windowSoftInputMode="adjustResize" />
         <activity android:name=".MainActivity" android:exported="false" android:windowSoftInputMode="adjustResize" />
         <activity
             android:name=".CityPickerActivity"

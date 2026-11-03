@@ -33,9 +33,19 @@ class CatalogRepository private constructor(context: Context) {
     private val magnit = MagnitSource(transport)
     private val fix = FixPriceSource(transport)
 
-    fun snapshot(cityId: String, shopId: String? = null): CatalogSnapshot? =
-        shopId?.let { cache.readShop(cityId, it) } ?: cache.read(cityId)
+    fun snapshot(cityId: String, shopId: String? = null): CatalogSnapshot? {
+        val latest = cache.read(cityId)
+        val shop = shopId?.let { cache.readShop(cityId, it) } ?: return latest
+        return shop.copy(offers = shop.offers.filter { it.store.id == "magnit" } +
+            (latest ?: shop).offers.filter { it.store.id != "magnit" },
+            sources = shop.sources.filter { it.storeId == "magnit" } +
+                (latest ?: shop).sources.filter { it.storeId != "magnit" })
+    }
     fun remember(snapshot: CatalogSnapshot) { cache.remember(snapshot) }
+
+    fun importCatalog(city: City, offers: List<Offer>) {
+        cache.update(city.id) { previous -> CatalogImports.merge(previous, city, offers) }
+    }
 
     private fun readFile(cityId: String, name: String): CatalogSnapshot? = runCatching {
         codec.decode(AtomicFile(File(directory, name)).readFully().toString(Charsets.UTF_8), cityId)

@@ -28,4 +28,13 @@ object CityCatalog {
     )
     fun city(id: String): City? = cities.firstOrNull { it.id == id }
     fun store(id: String): Store? = stores.firstOrNull { it.id == id }
+
+    /** A selected source address, never the app's city label, establishes local provenance. */
+    fun addressMatches(city: City, address: String): Boolean {
+        val text = address.lowercase(java.util.Locale.ROOT).replace('ё', 'е').replace(Regex("[\\s\\p{Z}]+"), " ")
+        val name = city.name.lowercase(java.util.Locale.ROOT).replace('ё', 'е')
+        val cityPattern = Regex("(?<![\\p{L}\\p{M}\\p{N}_])" + Regex.escape(name) + "(?![\\p{L}\\p{M}\\p{N}_])")
+        return cityPattern.containsMatchIn(text) && (city.region != "Московская область" ||
+            Regex("московск[а-я]*[., ]+обл").containsMatchIn(text))
+    }
 }

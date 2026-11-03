@@ -24,6 +24,18 @@ class CatalogViewModel(application: Application) : AndroidViewModel(application)
     private var job: Future<*>? = null
     private var currentCityId: String? = null
 
+    fun pauseRefresh() {
+        generation.incrementAndGet()
+        job?.cancel(true)
+        mutableState.value = CatalogUiState(mutableState.value?.snapshot, false)
+    }
+
+    fun restoreImported(cityId: String) {
+        pauseRefresh()
+        currentCityId = cityId
+        mutableState.value = CatalogUiState(repository.snapshot(cityId, preferences.magnitShopId(cityId)), false)
+    }
+
     fun load(cityId: String, shopId: String? = null, force: Boolean = false) {
         if (!force && cityId == currentCityId && mutableState.value != null) return
         val city = CityCatalog.city(cityId) ?: return

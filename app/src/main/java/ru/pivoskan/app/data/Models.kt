@@ -57,7 +57,7 @@ data class RemoteShop(
     val providerType: String = "1"
 )
 
-enum class SourceStatus { LOADING, AVAILABLE, EMPTY, BLOCKED, ERROR, CACHED }
+enum class SourceStatus { LOADING, AVAILABLE, EMPTY, BLOCKED, ERROR, CACHED, CATALOG }
 
 data class SourceState(val storeId: String, val status: SourceStatus, val offerCount: Int = 0)
 
