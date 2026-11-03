@@ -1,0 +1,7 @@
+# Keep shell scripts LF so the wrapper works on macOS/Linux checkouts.
+* text=auto
+gradlew text eol=lf
+*.bat text eol=crlf
+*.jar binary
+*.png binary
+*.ttf binary

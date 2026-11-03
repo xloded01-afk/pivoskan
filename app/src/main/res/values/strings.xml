@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Пивоскан</string>
+
+    <string name="placeholder_title">Пивоскан</string>
+    <string name="placeholder_subtitle">Здесь скоро появятся цены на пиво</string>
+</resources>
