@@ -20,6 +20,29 @@ import ru.pivoskan.app.data.PriceScope
 
 /** Parses a bounded snapshot of rendered cards; only its selected address establishes locality. */
 class DixyCatalogParser(private val now: () -> Long = System::currentTimeMillis) {
+    /** City scans replace a whole shop, so silently dropping a damaged eligible card is forbidden. */
+    fun parseComplete(json: String, city: City): List<Offer> {
+        if (json.length > MAX_JSON_CHARS) fail("catalog size limit exceeded")
+        val cards = readCatalog(json)["cards"]?.takeIf { it.isJsonArray }?.asJsonArray
+            ?: fail("missing cards")
+        val expected = linkedSetOf<String>()
+        cards.forEach { value ->
+            if (!value.isJsonObject) fail("invalid card")
+            val card = value.asJsonObject
+            val title = card.text("title") ?: fail("missing title")
+            if (title.isBlank() || title.length > MAX_TEXT_CHARS || '<' in title || '>' in title)
+                fail("invalid title in complete catalog")
+            if (!BEER.containsMatchIn(normalized(title))) return@forEach
+            val badges = card["badges"]?.takeIf { it.isJsonArray }?.asJsonArray ?: fail("invalid badges")
+            val conditions = badges.map { it.stringValue() ?: fail("invalid badge") }
+            if (conditions.any { LOYALTY.containsMatchIn(normalized(it)) }) return@forEach
+            expected += card.text("id") ?: fail("missing product id")
+        }
+        val result = parse(json, city)
+        if (result.size != expected.size) fail("eligible cards could not all be validated")
+        return result
+    }
+
     fun parse(json: String, city: City): List<Offer> {
         if (json.length > MAX_JSON_CHARS) fail("catalog size limit exceeded")
         val root = readCatalog(json)
@@ -123,7 +146,7 @@ class DixyCatalogParser(private val now: () -> Long = System::currentTimeMillis)
     }
 
     private fun addressHash(address: String): String = MessageDigest.getInstance("SHA-256")
-        .digest(address.toByteArray(Charsets.UTF_8))
+        .digest(normalized(address).toByteArray(Charsets.UTF_8))
         .joinToString("") { "%02x".format(it.toInt() and 255) }
 
     private fun JsonObject.text(name: String): String? = get(name)?.stringValue()

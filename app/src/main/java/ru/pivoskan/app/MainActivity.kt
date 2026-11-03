@@ -287,11 +287,15 @@ class MainActivity : AppCompatActivity() {
                 .setMessage(scope + "\n\n" + getString(R.string.source_more))
                 .setNegativeButton(R.string.understood, null)
             if (store.id == "dixy") {
-                dialog.setPositiveButton(R.string.source_catalog_open) { _, _ ->
+                dialog.setPositiveButton(R.string.source_city_scan) { _, _ ->
+                    catalog.pauseRefresh()
+                    catalogBrowser.launch(Intent(this, DixyCityScanActivity::class.java)
+                        .putExtra("city_id", cityId))
+                }.setNeutralButton(R.string.source_catalog_manual) { _, _ ->
                     catalog.pauseRefresh()
                     catalogBrowser.launch(Intent(this, CatalogBrowserActivity::class.java)
                         .putExtra(CatalogBrowserActivity.EXTRA_CITY, cityId))
-                }.setNeutralButton(R.string.source_open_external) { _, _ -> SourceLinks.open(this, url) }
+                }
             } else dialog.setPositiveButton(R.string.source_open) { _, _ -> SourceLinks.open(this, url) }
             dialog.show()
         }.setPositiveButton(R.string.understood, null).show()

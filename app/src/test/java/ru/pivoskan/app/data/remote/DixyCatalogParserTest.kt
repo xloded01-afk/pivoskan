@@ -16,6 +16,29 @@ class DixyCatalogParserTest {
     private val city = City("balashikha", "Балашиха", "Московская область")
     private val parser = DixyCatalogParser { FETCHED_AT }
 
+    @Test fun `complete shop never drops a card with an empty extracted title`() {
+        listOf("", "  ", "<b>Пиво</b>").forEach { title ->
+            val damaged = fixture().apply { getAsJsonArray("cards")[1].asJsonObject.addProperty("title", title) }
+            assertThrows(SourceException::class.java) { parser.parseComplete(damaged.toString(), city) }
+        }
+    }
+
+    @Test fun `complete shop rejects partial parse but allows explicit loyalty exclusions`() {
+        val damaged = fixture().apply { getAsJsonArray("cards")[1].asJsonObject.addProperty("priceRub", "broken") }
+        assertEquals(4, parser.parse(damaged.toString(), city).size)
+        assertThrows(SourceException::class.java) { parser.parseComplete(damaged.toString(), city) }
+        val special = fixture().apply {
+            getAsJsonArray("cards")[1].asJsonObject.add("badges", JsonArray().apply { add("по карте") })
+        }
+        assertEquals(4, parser.parseComplete(special.toString(), city).size)
+    }
+
+    @Test fun `canonical shop identity survives case whitespace and yo formatting`() {
+        val first = parser.parse(FIXTURE, city).first()
+        val changed = fixture().apply { addProperty("address", "  " + ADDRESS.uppercase().replace(" ", "  ") + "  ") }
+        assertEquals(first.shopId, parser.parse(changed.toString(), city).first().shopId)
+    }
+
     @Test fun `five evidence-derived prices preserve exact amounts and source metadata`() {
         val offers = parser.parse(FIXTURE, city)
         assertEquals(listOf(10990, 8499, 12990, 8899, 18990), offers.map { it.priceKopecks })

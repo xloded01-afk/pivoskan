@@ -47,6 +47,10 @@ class CatalogRepository private constructor(context: Context) {
         cache.update(city.id) { previous -> CatalogImports.merge(previous, city, offers) }
     }
 
+    fun importCityShop(city: City, offers: List<Offer>, scanStartedAt: Long = Long.MAX_VALUE) {
+        cache.update(city.id) { previous -> CatalogImports.mergeCityShop(previous, city, offers, scanStartedAt) }
+    }
+
     private fun readFile(cityId: String, name: String): CatalogSnapshot? = runCatching {
         codec.decode(AtomicFile(File(directory, name)).readFully().toString(Charsets.UTF_8), cityId)
     }.getOrNull()
