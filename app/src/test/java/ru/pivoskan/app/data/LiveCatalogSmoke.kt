@@ -11,12 +11,14 @@ object LiveCatalogSmoke {
         val transport = HttpsTransport()
         val magnit = MagnitSource(transport)
         val shops = magnit.shops(city)
-        check(shops.isNotEmpty()) { "No confirmed shops in Balashikha" }
-        val shop = shops.first()
-        val magnitOffers = magnit.offers(city, shop)
-        check(magnitOffers.isNotEmpty()) { "No real Magnit beer offers" }
-        check(magnitOffers.all { it.shopId == shop.id && it.priceKopecks > 0 && it.address == shop.address })
-        println("Magnit: ${shops.size} selectable shops; ${magnitOffers.size} beer offers; exact-shop provenance verified")
+        check(shops.distinctBy { it.id }.size >= 2) { "Need two confirmed distinct shops in Balashikha" }
+        shops.take(2).forEach { shop ->
+            val magnitOffers = magnit.offers(city, shop)
+            check(magnitOffers.isNotEmpty()) { "No real Magnit beer offers" }
+            check(magnitOffers.all { it.shopId == shop.id && it.priceKopecks > 0 && it.address == shop.address })
+            println("Magnit shop ${shop.id}: ${magnitOffers.size} offers; address/store provenance verified")
+        }
+        println("Magnit: ${shops.size} discovered shops; two distinct address catalogs verified")
         val fixOffers = FixPriceSource(transport).offers(city)
         check(fixOffers.isNotEmpty()) { "No real Fix Price beer offers" }
         check(fixOffers.all { it.cityId == city.id && it.scope == PriceScope.CITY_CATALOG && it.priceKopecks > 0 })
