@@ -14,6 +14,7 @@ data class CatalogImportState(val saving: Boolean = false, val count: Int? = nul
 /** Disk work belongs to the retained model, so rotation cannot drop the save result. */
 class CatalogImportViewModel(application: Application) : AndroidViewModel(application) {
     private val repository = CatalogRepository.get(application)
+    private val cityRepository = ru.pivoskan.app.data.scan.AndroidCityScanRepository.get(application)
     private val worker = Executors.newSingleThreadExecutor()
     private val main = Handler(Looper.getMainLooper())
     private val mutableState = MutableLiveData(CatalogImportState())
@@ -26,6 +27,7 @@ class CatalogImportViewModel(application: Application) : AndroidViewModel(applic
         worker.submit {
             val result = runCatching {
                 val offers = DixyCatalogParser().parse(json, city)
+                require(cityRepository.mergeManualOffers(city.id, offers)) { "Full shop already saved; use complete refresh" }
                 repository.importCatalog(city, offers)
                 offers.size
             }
