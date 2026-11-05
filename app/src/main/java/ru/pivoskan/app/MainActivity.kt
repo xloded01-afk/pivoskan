@@ -28,6 +28,7 @@ import ru.pivoskan.app.data.SourceStatus
 import ru.pivoskan.app.data.Prefs
 import ru.pivoskan.app.data.PriceEngine
 import ru.pivoskan.app.data.SortMode
+import ru.pivoskan.app.data.scan.*
 import ru.pivoskan.app.databinding.ActivityMainBinding
 import ru.pivoskan.app.ui.BeerAdapter
 import ru.pivoskan.app.util.formatMoney
@@ -51,12 +52,12 @@ class MainActivity : AppCompatActivity() {
     private var pendingScroll: Parcelable? = null
     private lateinit var catalog: CatalogViewModel
     private var snapshot: CatalogSnapshot? = null
+    private var cityScan: CityScanSnapshot? = null
     private var loading = false
     private val catalogBrowser = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) {
         if (::catalog.isInitialized) {
             // Always reread: a successful save can outlive a browser activity's rotation.
             catalog.restoreImported(cityId)
-            catalog.load(cityId, force = true)
         }
     }
 
@@ -92,7 +93,7 @@ class MainActivity : AppCompatActivity() {
         binding.toolbar.contentDescription = getString(R.string.city_accessibility, city.name)
         binding.toolbar.setOnMenuItemClickListener { item ->
             when (item.itemId) {
-                R.id.action_refresh -> catalog.load(cityId, force = true)
+                R.id.action_refresh -> if (loading) catalog.cancel() else catalog.load(cityId, force = true)
                 R.id.action_change_city -> startActivity(Intent(this, CityPickerActivity::class.java)
                     .putExtra("change_city", true))
                 R.id.action_theme -> showThemePicker()
@@ -136,6 +137,7 @@ class MainActivity : AppCompatActivity() {
         binding.storeSelector.setOnClickListener { showShops() }
         catalog = ViewModelProvider(this)[CatalogViewModel::class.java]
         catalog.state.observe(this) { state ->
+            cityScan = state.scan?.takeIf { it.cityId == cityId }
             snapshot = state.snapshot?.takeIf { it.cityId == cityId }
             loading = state.loading
             updateSourceControls()
@@ -228,14 +230,21 @@ class MainActivity : AppCompatActivity() {
     private fun updateSourceControls() {
         val value = snapshot
         binding.loadingProgress.isVisible = loading
-        binding.toolbar.menu.findItem(R.id.action_refresh).isEnabled = !loading
-        binding.storeSelector.text = value?.selectedShop?.let { getString(R.string.store_selected, it.address) }
-            ?: getString(R.string.store_choose)
-        binding.storeSelector.isEnabled = !loading && !value?.shops.isNullOrEmpty()
+        binding.toolbar.menu.findItem(R.id.action_refresh).apply {
+            isEnabled = true
+            title = if (loading) "Остановить обход" else "Обновить цены"
+        }
+        val magnit = cityScan?.sources?.find { it.sourceId == "magnit" }
+        binding.storeSelector.text = if (magnit?.discovery != null)
+            "Магнит: ${magnit.succeeded}/${magnit.discovery.shops.size} · адреса" else "Магнит: поиск адресов"
+        binding.storeSelector.isEnabled = magnit != null
         val available = value?.sources.orEmpty().count { it.status == SourceStatus.AVAILABLE || it.status == SourceStatus.CACHED }
         binding.sourcesButton.text = getString(R.string.source_button, available, CityCatalog.stores.size)
         binding.snapshotLabel.text = when {
-            loading -> getString(R.string.live_loading)
+            loading -> cityScan?.sources?.firstOrNull { it.current != null }?.let { source ->
+                val address = source.discovery?.shops?.find { it.id == source.current?.shopId }?.address
+                address?.let { "Проверяем: $it" } ?: "Обновляем каталоги города…"
+            } ?: "Ищем магазины выбранного города…"
             value != null && value.offers.isNotEmpty() -> {
                 val time = DateFormat.getDateTimeInstance(DateFormat.SHORT, DateFormat.SHORT).format(Date(value.updatedAt))
                 if (value.fromCache) getString(R.string.live_cached) else getString(R.string.live_updated, time)
@@ -260,57 +269,78 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    private fun showSources() {
-        val states = CityCatalog.stores.map { store ->
-            val status = snapshot?.sources?.firstOrNull { it.storeId == store.id }
-                ?: SourceState(store.id, if (loading && store.id in setOf("magnit", "fixprice")) SourceStatus.LOADING
-                    else if (store.id == "dixy") SourceStatus.CATALOG
-                    else if (store.id == "pyaterochka") SourceStatus.BLOCKED else SourceStatus.ERROR)
-            getString(R.string.source_line, store.name, sourceDescription(status))
+    private fun scanSummary(source: SourceProgress?): String {
+        if (source == null) return "Ожидает запуска"
+        val phase = when (source.phase) {
+            SourcePhase.WAITING -> "В очереди"
+            SourcePhase.RUNNING -> "Сканирование"
+            SourcePhase.NEEDS_LOGIN -> "Нужен вход"
+            SourcePhase.NEEDS_ACTION -> "Нужна проверка на сайте"
+            SourcePhase.COMPLETE -> "Проверка завершена"
+            SourcePhase.PARTIAL -> "Частичный результат"
+            SourcePhase.UNAVAILABLE -> "Автоматическая загрузка недоступна"
+            SourcePhase.CANCELLED -> "Обход остановлен"
         }
-        MaterialAlertDialogBuilder(this).setTitle(R.string.sources_title).setItems(states.toTypedArray()) { _, index ->
-            val store = CityCatalog.stores[index]
-            val scope = when (store.id) {
-                "magnit" -> getString(R.string.source_scope_address, getString(R.string.source_scope_store), snapshot?.selectedShop?.address.orEmpty())
-                "fixprice" -> getString(R.string.source_scope_city)
-                "dixy" -> getString(R.string.source_catalog_scope)
-                else -> getString(R.string.source_blocked)
-            }
-            val url = when (store.id) {
-                "magnit" -> "https://magnit.ru/catalog/41183-pivo_kokteyli_alkogolcorenew" +
-                    (snapshot?.selectedShop?.let { "?shopCode=${it.id}&shopType=1" } ?: "")
-                "fixprice" -> "https://fix-price.com/catalog/produkty-i-napitki/alkogolnaya-produktsiya"
-                "dixy" -> CatalogBrowserActivity.CATALOG_URL
-                else -> "https://5ka.ru/catalog/"
-            }
-            val dialog = MaterialAlertDialogBuilder(this).setTitle(store.name)
-                .setMessage(scope + "\n\n" + getString(R.string.source_more))
-                .setNegativeButton(R.string.understood, null)
-            if (store.id == "dixy") {
-                dialog.setPositiveButton(R.string.source_city_scan) { _, _ ->
-                    catalog.pauseRefresh()
-                    catalogBrowser.launch(Intent(this, DixyCityScanActivity::class.java)
-                        .putExtra("city_id", cityId))
-                }.setNeutralButton(R.string.source_catalog_manual) { _, _ ->
-                    catalog.pauseRefresh()
-                    catalogBrowser.launch(Intent(this, CatalogBrowserActivity::class.java)
-                        .putExtra(CatalogBrowserActivity.EXTRA_CITY, cityId))
-                }
-            } else dialog.setPositiveButton(R.string.source_open) { _, _ -> SourceLinks.open(this, url) }
-            dialog.show()
-        }.setPositiveButton(R.string.understood, null).show()
+        if (source.discovery?.scope == ru.pivoskan.app.data.PriceScope.CITY_CATALOG)
+            return "$phase · каталог города, без подтверждения адресов"
+        return "$phase · проверено ${source.succeeded}/${source.discovery?.shops?.size ?: 0}, ошибок ${source.failed}"
     }
 
-    private fun showShops() {
-        val value = snapshot ?: return
-        if (value.shops.isEmpty()) return
-        val selected = value.shops.indexOfFirst { it.id == value.selectedShop?.id }
-        MaterialAlertDialogBuilder(this).setTitle(R.string.store_dialog)
-            .setSingleChoiceItems(value.shops.map { it.address }.toTypedArray(), selected) { dialog, index ->
-                dialog.dismiss()
-                catalog.load(cityId, shopId = value.shops[index].id, force = true)
-            }.setNegativeButton(R.string.understood, null).show()
+    private fun problemText(problem: SourceProblem?): String = when (problem?.kind) {
+        ProblemKind.NETWORK -> "Ошибка сети; прежние цены сохранены"
+        ProblemKind.HTTP -> "Ответ сайта: ${problem.code}"
+        ProblemKind.NEEDS_LOGIN -> "Требуется вход на официальном сайте"
+        ProblemKind.NEEDS_ACTION -> "Сайт ограничил запросы или требует проверки: ${problem.code}"
+        ProblemKind.UNSUPPORTED -> "Способ автоматической загрузки ещё не подтверждён"
+        ProblemKind.INVALID_DATA -> "Не удалось подтвердить адрес, цены или полноту данных"
+        ProblemKind.LIMIT -> "Достигнут предел обхода; результат частичный"
+        ProblemKind.STORAGE -> "Не удалось сохранить данные на телефоне"
+        ProblemKind.CANCELLED -> "Запрос отменён"
+        null -> "Проверено"
     }
+
+    private fun showSources() {
+        val lines = CityCatalog.stores.map { store ->
+            "${store.name}: ${scanSummary(cityScan?.sources?.find { it.sourceId == store.id })}"
+        }
+        MaterialAlertDialogBuilder(this).setTitle("Источники и охват")
+            .setItems(lines.toTypedArray()) { _, index -> showSourceDetails(CityCatalog.stores[index].id) }
+            .setPositiveButton(R.string.understood, null)
+            .setNegativeButton(if (loading) "Остановить обход" else "Обновить цены") { _, _ ->
+                if (loading) catalog.cancel() else catalog.refresh()
+            }.show()
+    }
+
+    private fun showSourceDetails(sourceId: String) {
+        val store = CityCatalog.store(sourceId) ?: return
+        val source = cityScan?.sources?.find { it.sourceId == sourceId }
+        val lines = mutableListOf(scanSummary(source))
+        if (sourceId == "magnit") lines += "Проверяется формат «Магнит у дома». Другие форматы сети пока не подтверждены."
+        source?.discovery?.let { discovery ->
+            if (!discovery.complete) lines += "Полнота списка магазинов не подтверждена."
+            discovery.problem?.let { lines += problemText(it) }
+            discovery.shops.forEach { shop ->
+                val key = CatalogKey(cityId, sourceId, shop.id)
+                val result = when {
+                    source.current == key -> "Проверяем…"
+                    source.results.containsKey(key) -> problemText(source.results[key])
+                    else -> "Не проверен в этом обходе"
+                }
+                lines += "${shop.address}\n$result"
+            }
+        }
+        val url = when (sourceId) {
+            "magnit" -> "https://magnit.ru/catalog/41183-pivo_kokteyli_alkogolcorenew"
+            "fixprice" -> "https://fix-price.com/catalog/produkty-i-napitki/alkogolnaya-produktsiya"
+            "dixy" -> CatalogBrowserActivity.CATALOG_URL
+            else -> "https://5ka.ru/catalog/"
+        }
+        MaterialAlertDialogBuilder(this).setTitle(store.name).setMessage(lines.joinToString("\n\n"))
+            .setPositiveButton("Открыть каталог") { _, _ -> SourceLinks.open(this, url) }
+            .setNegativeButton(R.string.understood, null).show()
+    }
+
+    private fun showShops() = showSourceDetails("magnit")
 
     private fun showThemePicker() {
         val modes = intArrayOf(AppCompatDelegate.MODE_NIGHT_FOLLOW_SYSTEM,

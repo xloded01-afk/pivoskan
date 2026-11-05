@@ -24,6 +24,8 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import ru.pivoskan.app.data.City
 import ru.pivoskan.app.data.CatalogRepository
 import ru.pivoskan.app.data.CatalogSnapshot
+import ru.pivoskan.app.data.scan.AndroidCityScanRepository
+import ru.pivoskan.app.data.scan.asLegacySnapshot
 import ru.pivoskan.app.data.CityCatalog
 import ru.pivoskan.app.data.Offer
 import ru.pivoskan.app.data.Prefs
@@ -57,7 +59,7 @@ class BeerDetailsActivity : AppCompatActivity() {
         val offerId = savedInstanceState?.getString(EXTRA_OFFER_ID)
             ?: runCatching { intent.getStringExtra(EXTRA_OFFER_ID) }.getOrNull()
         val city = cityId?.let(CityCatalog::city)
-        val snapshot = city?.let { CatalogRepository.get(this).snapshot(it.id) }
+        val snapshot = city?.let { AndroidCityScanRepository.get(this).read(it.id).asLegacySnapshot() }
             ?.takeIf { it.cityId == cityId }
         val offer = snapshot?.offers?.firstOrNull { it.id == offerId && it.cityId == cityId }
         if (city == null || snapshot == null || offer == null) {
