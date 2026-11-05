@@ -23,10 +23,12 @@ class FixPriceSource(
 ) {
     fun offers(city: City): List<Offer> = try {
         loadOffers(city)
+    } catch (error: InterruptedException) {
+        throw error
     } catch (error: SourceException) {
         throw error
     } catch (error: Exception) {
-        throw SourceException(message = "Fix Price: ${error.message ?: "invalid response"}")
+        throw SourceException(message = "Fix Price unavailable", cause = error)
     }
 
     private fun loadOffers(city: City): List<Offer> {

@@ -5,21 +5,48 @@ import java.io.IOException
 import java.net.URL
 import java.util.zip.GZIPInputStream
 import javax.net.ssl.HttpsURLConnection
+import ru.pivoskan.app.data.scan.ScanPolicy
 
 /** Public catalogs only; standard TLS verification, bounded bodies, no credential storage. */
-class HttpsTransport : HttpTransport {
+class HttpsTransport : CancellableHttpTransport {
+    @Volatile private var cancelled = false
+    @Volatile private var active: HttpsURLConnection? = null
+    private var lastRequestAt = 0L
+    override fun cancel() { cancelled = true; active?.disconnect() }
     override fun execute(request: HttpRequest): HttpResponse {
+        var last: IOException? = null
+        repeat(ScanPolicy.maxTransientRetries + 1) { attempt ->
+            checkInterrupted()
+            try {
+                val response = requestOnce(request)
+                if (response.status !in 500..599 || attempt == ScanPolicy.maxTransientRetries) return response
+            } catch (e: IOException) {
+                checkInterrupted()
+                last = e
+                if (attempt == ScanPolicy.maxTransientRetries) throw e
+            }
+            Thread.sleep(ScanPolicy.retryDelayMs)
+        }
+        throw last ?: IOException("No response")
+    }
+    private fun requestOnce(request: HttpRequest): HttpResponse {
         checkInterrupted()
+        val wait = ScanPolicy.minimumRequestGapMs - (System.nanoTime() / 1_000_000 - lastRequestAt)
+        if (wait > 0) Thread.sleep(wait)
+        checkInterrupted()
+        lastRequestAt = System.nanoTime() / 1_000_000
         val url = URL(request.url)
         require(url.protocol == "https" && url.host in setOf("magnit.ru", "api.fix-price.com"))
         val connection = url.openConnection() as HttpsURLConnection
+        active = connection
         try {
-            connection.connectTimeout = 10_000
-            connection.readTimeout = 15_000
+            checkInterrupted()
+            connection.connectTimeout = ScanPolicy.directConnectMs
+            connection.readTimeout = ScanPolicy.directReadMs
             connection.instanceFollowRedirects = false
             connection.requestMethod = request.method
             connection.setRequestProperty("Accept", "application/json")
-            connection.setRequestProperty("User-Agent", "Pivoskan/1.1 (Android)")
+            connection.setRequestProperty("User-Agent", "Pivoskan/1.4 (Android)")
             request.headers.forEach { (name, value) -> connection.setRequestProperty(name, value) }
             request.body?.let { body ->
                 connection.doOutput = true
@@ -47,9 +74,9 @@ class HttpsTransport : HttpTransport {
                 }
             }
             return HttpResponse(status, body, headers)
-        } finally { connection.disconnect() }
+        } finally { active = null; connection.disconnect() }
     }
     private fun checkInterrupted() {
-        if (Thread.currentThread().isInterrupted) throw InterruptedException()
+        if (cancelled || Thread.currentThread().isInterrupted) throw InterruptedException()
     }
 }

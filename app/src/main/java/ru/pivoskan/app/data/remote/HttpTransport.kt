@@ -6,6 +6,8 @@ data class HttpResponse(val status: Int, val body: String, val headers: Map<Stri
     fun header(name: String): String? = headers.entries.firstOrNull { it.key.equals(name, true) }?.value
 }
 fun interface HttpTransport { fun execute(request: HttpRequest): HttpResponse }
+interface CancellableHttpTransport : HttpTransport { fun cancel() }
 
 /** Sources stop at access restrictions; no authenticated tokens or anti-bot bypass. */
-class SourceException(val blocked: Boolean = false, message: String = "Source unavailable") : Exception(message)
+class SourceException(val blocked: Boolean = false, message: String = "Source unavailable",
+    val statusCode: Int? = null, cause: Throwable? = null) : Exception(message, cause)

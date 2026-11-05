@@ -219,11 +219,11 @@ class MagnitSourceTest {
         assertEquals(2, calls)
     }
 
-    @Test fun `pagination cap rejects incomplete results without requesting page 21`() {
+    @Test fun `pagination cap rejects incomplete results without requesting beyond policy`() {
         var calls = 0
         val http = HttpTransport { calls++; HttpResponse(200, moreGoods(calls * 52)) }
         expectSourceError { MagnitSource(http).offers(city, shop) }
-        assertEquals(20, calls)
+        assertEquals(ru.pivoskan.app.data.scan.ScanPolicy.maxGoodsPages, calls)
     }
 
     @Test fun `nonadvancing or missing cursor rejects incomplete results`() {

@@ -8,6 +8,7 @@ import ru.pivoskan.app.data.CityCatalog
 import ru.pivoskan.app.data.Offer
 import ru.pivoskan.app.data.PriceScope
 import ru.pivoskan.app.data.RemoteShop
+import ru.pivoskan.app.data.scan.*
 import java.text.ParsePosition
 import java.text.SimpleDateFormat
 import java.util.Locale
@@ -18,23 +19,64 @@ class MagnitSource(
     private val http: HttpTransport,
     private val now: () -> Long = System::currentTimeMillis
 ) {
-    /** A selectable first page (at most 100 stores), not exhaustive citywide coverage. */
-    fun shops(city: City): List<RemoteShop> = readSource {
+    /** Legacy single-page API; citywide callers must use discover and inspect completeness. */
+    fun shops(city: City): List<RemoteShop> = readSource { parseShops(storePage(city, 0), city) }
+
+    fun discover(city: City): DiscoveryResult {
+        val found = linkedMapOf<String, RemoteShop>()
+        val rawIds = mutableSetOf<String>()
+        var offset = 0
+        var expected: Int? = null
+        var excluded = 0
+        fun partial(code: String) = DiscoveryResult(found.values.toList(), PriceScope.STORE, false,
+            excluded, SourceProblem(ProblemKind.INVALID_DATA, "discover", code))
+        try {
+            repeat(ScanPolicy.maxDiscoveryPages) {
+                val root = storePage(city, offset)
+                val data = root.array("data") ?: return partial("INVALID_DATA")
+                val total = root.integer("totalCount")?.takeIf { it >= 0 } ?: return partial("INCOMPLETE_LIST")
+                if (expected != null && expected != total) return partial("INCOMPLETE_LIST")
+                expected = total
+                if (total > ScanPolicy.maxShopsPerSource) return partial("LIMIT")
+                for (element in data) {
+                    val item = element.takeIf { it.isJsonObject }?.asJsonObject ?: return partial("INVALID_DATA")
+                    val rawId = item.obj("externalId")?.text("storeCode") ?: return partial("INVALID_DATA")
+                    if (!rawIds.add(rawId)) return partial("INCOMPLETE_LIST")
+                }
+                val accepted = parseShops(root, city)
+                excluded += data.size() - accepted.size
+                accepted.forEach { found[it.id] = it }
+                offset += data.size()
+                if (offset > total) return partial("INCOMPLETE_LIST")
+                if (offset == total) return DiscoveryResult(found.values.toList(), PriceScope.STORE, true, excluded)
+                if (data.size() == 0) return partial("INCOMPLETE_LIST")
+            }
+            return partial("LIMIT")
+        } catch (e: InterruptedException) { throw e
+        } catch (e: Exception) {
+            return DiscoveryResult(found.values.toList(), PriceScope.STORE, false, excluded, sourceProblem(e, "discover"))
+        }
+    }
+
+    private fun storePage(city: City, offset: Int): JsonObject {
         if (city.id.isBlank() || city.name.isBlank()) fail("Missing requested city")
         val body = JsonObject().apply {
             add("filters", JsonObject().apply {
                 addProperty("query", city.name)
                 add("storeTypeListV2", JsonArray().apply { add("MM") })
             })
-            add("pagination", JsonObject().apply { addProperty("offset", 0); addProperty("size", 100) })
+            add("pagination", JsonObject().apply { addProperty("offset", offset); addProperty("size", ScanPolicy.discoveryPageSize) })
             add("sorting", JsonObject().apply {
                 addProperty("sortBy", "SORT_BY_CITY")
                 addProperty("sortType", "SORT_TYPE_ASC")
             })
         }
-        val data = post("https://magnit.ru/webgate/v1/stores-facade/search/detail", body)
-            .array("data") ?: fail("Missing Magnit stores")
-        data.mapNotNull { element ->
+        return post("https://magnit.ru/webgate/v1/stores-facade/search/detail", body)
+    }
+
+    private fun parseShops(root: JsonObject, city: City): List<RemoteShop> {
+        val data = root.array("data") ?: fail("Missing Magnit stores")
+        return data.mapNotNull { element ->
             val item = element.takeIf { it.isJsonObject }?.asJsonObject ?: fail("Invalid Magnit store")
             if (item.flag("isActive") != true ||
                 item.text("status")?.let { it != "STATUS_ACTIVE" } == true ||
@@ -55,7 +97,7 @@ class MagnitSource(
                 longitude = coordinates?.coordinate("longitude", -180.0, 180.0),
                 providerType = "1"
             )
-        }.distinctBy { it.id }.take(100)
+        }.distinctBy { it.id }
     }
 
     fun offers(city: City, shop: RemoteShop): List<Offer> = readSource {
@@ -66,7 +108,7 @@ class MagnitSource(
         val fetchedAt = now()
         val offers = linkedMapOf<String, Offer>()
         var offset = 0
-        repeat(20) {
+        repeat(ScanPolicy.maxGoodsPages) {
             val body = JsonObject().apply {
                 addProperty("storeCode", shop.id)
                 addProperty("storeType", "1")
@@ -89,12 +131,13 @@ class MagnitSource(
             products.forEach { product ->
                 parseOffer(product, city, shop, fetchedAt)?.let { offers[it.id] = it }
             }
+            if (offers.size > ScanPolicy.maxOffersPerShop) fail("Magnit catalog limit")
             if (!hasMore) return@readSource offers.values.toList()
             val nextOffset = pagination.integer("nextOffset") ?: fail("Missing Magnit nextOffset")
             if (nextOffset <= offset) fail("Magnit pagination did not advance")
             offset = nextOffset
         }
-        fail("Magnit goods still have more pages after the 20-page limit")
+        fail("Magnit goods still have more pages after the page limit")
     }
 
     private fun parseOffer(product: JsonObject, city: City, shop: RemoteShop, fetchedAt: Long): Offer? {
@@ -132,10 +175,10 @@ class MagnitSource(
         val response = http.execute(HttpRequest(url, method = "POST", body = body.toString(), headers = mapOf(
             "x-magnit-bff" to "1", "Content-Type" to "application/json"
         )))
-        if (response.status == 403 || response.status == 429) {
-            throw SourceException(blocked = true, message = "Magnit access restricted (${response.status})")
+        if (response.status in listOf(401, 403, 429)) {
+            throw SourceException(blocked = true, message = "Magnit access restricted (${response.status})", statusCode = response.status)
         }
-        if (response.status !in 200..299) fail("Magnit HTTP ${response.status}")
+        if (response.status !in 200..299) throw SourceException(message = "Magnit HTTP ${response.status}", statusCode = response.status)
         val root = JsonParser.parseString(response.body)
         return root.takeIf { it.isJsonObject }?.asJsonObject ?: fail("Invalid Magnit response")
     }
@@ -224,10 +267,12 @@ class MagnitSource(
 
     private inline fun <T> readSource(block: () -> T): T = try {
         block()
+    } catch (error: InterruptedException) {
+        throw error
     } catch (error: SourceException) {
         throw error
     } catch (error: Exception) {
-        fail("Invalid or unavailable Magnit source (${error.javaClass.simpleName})")
+        throw SourceException(message = "Invalid or unavailable Magnit source", cause = error)
     }
 
     private fun fail(message: String): Nothing = throw SourceException(message = message)
