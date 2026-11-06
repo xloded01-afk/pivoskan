@@ -18,6 +18,14 @@ class CityScanCodec {
         require(json.toByteArray(Charsets.UTF_8).size <= MAX_CACHE_BYTES)
         val root = JsonParser.parseString(json).asJsonObject
         require(root.get("schema").asInt == 2)
+        // Gson bypasses Kotlin defaults for old records. Fill absent enum values before decoding.
+        root.getAsJsonObject("snapshot").getAsJsonArray("catalogs").forEach { catalog ->
+            catalog.asJsonObject.getAsJsonArray("offers").forEach { entry ->
+                val offer = entry.asJsonObject
+                if (offer.get("priceEvidence")?.takeUnless { it.isJsonNull } == null)
+                    offer.addProperty("priceEvidence", OrdinaryPriceEvidence.UNKNOWN.name)
+            }
+        }
         val value = gson.fromJson(root.get("snapshot"), CityScanSnapshot::class.java)
         require(value.cityId == cityId && CityCatalog.city(cityId) != null)
         val catalogs = value.catalogs.filter { runCatching { it.key.cityId == cityId && valid(it) }.getOrDefault(false) }
@@ -47,6 +55,8 @@ class CityScanCodec {
                     offer.priceKopecks > 0 && offer.fetchedAt > 0 && offer.fetchedAt <= catalog.checkedAt &&
                     offer.id.isNotBlank() && ids.add(offer.id) && offer.beer.id.isNotBlank() &&
                     offer.beer.title.isNotBlank() && offer.beer.title.length <= 1024 &&
+                    (offer.product?.let { it.sourceProductId.isNotBlank() && it.sourceProductId.length <= 256 &&
+                        (it.imageUrl == null || ru.pivoskan.app.ui.ProductImagePolicy.allowed(it.imageUrl)) } ?: true) &&
                     uri.scheme == "https" && uri.host == host && uri.userInfo == null && uri.port in listOf(-1, 443) &&
                     if (key.shopId == null) offer.scope == PriceScope.CITY_CATALOG && offer.address.isBlank()
                     else offer.scope == PriceScope.STORE && CityCatalog.addressMatches(city, offer.address)

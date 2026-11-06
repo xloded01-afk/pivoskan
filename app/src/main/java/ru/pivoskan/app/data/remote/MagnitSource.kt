@@ -167,7 +167,9 @@ class MagnitSource(
             fetchedAt = fetchedAt,
             scope = PriceScope.STORE,
             shopId = shop.id,
-            validUntil = endDate?.takeIf { notExpired }
+            validUntil = endDate?.takeIf { notExpired },
+            product = ProductNames.descriptor(id, title),
+            priceEvidence = ru.pivoskan.app.data.OrdinaryPriceEvidence.CONFIRMED
         )
     }
 

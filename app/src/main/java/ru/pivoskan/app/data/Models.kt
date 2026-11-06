@@ -38,7 +38,9 @@ data class Offer(
     val cardPriceKopecks: Int? = null,
     val validUntil: String? = null,
     val maxPriceKopecks: Int? = null,
-    val cached: Boolean = false
+    val cached: Boolean = false,
+    val product: ProductDescriptor? = null,
+    val priceEvidence: OrdinaryPriceEvidence = OrdinaryPriceEvidence.UNKNOWN
 ) {
     val discountPercent: Int
         get() = oldPriceKopecks?.takeIf { it > priceKopecks }

@@ -6,6 +6,11 @@ import java.math.BigDecimal
 import java.security.MessageDigest
 
 object ProductNames {
+    fun descriptor(id: String, title: String, brand: String = ""): ru.pivoskan.app.data.ProductDescriptor {
+        val beer = beer(title, brand)
+        return ru.pivoskan.app.data.ProductDescriptor(id, brand = brand.takeIf { it.isNotBlank() },
+            variant = normalize(title), volumeMl = beer.volumeMl.takeIf { it > 0 })
+    }
     private val volume = Regex("(\\d+(?:[.,]\\d+)?)\\s*(мл|л)\\b", RegexOption.IGNORE_CASE)
     /** Conservative identity: no fuzzy matching of different brands, strengths or packaging. */
     fun beer(title: String, brand: String = ""): Beer {

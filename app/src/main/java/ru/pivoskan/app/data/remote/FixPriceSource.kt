@@ -133,7 +133,9 @@ class FixPriceSource(
             shopId = null,
             cardPriceKopecks = card?.priceKopecks,
             validUntil = card?.validUntil,
-            maxPriceKopecks = maximum.takeIf { it > minimum }
+            maxPriceKopecks = maximum.takeIf { it > minimum },
+            product = ProductNames.descriptor(sku, title, brand),
+            priceEvidence = ru.pivoskan.app.data.OrdinaryPriceEvidence.CONFIRMED
         )
     }
 

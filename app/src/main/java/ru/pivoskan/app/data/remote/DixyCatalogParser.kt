@@ -112,7 +112,9 @@ class DixyCatalogParser(private val now: () -> Long = System::currentTimeMillis)
             fetchedAt = fetchedAt,
             scope = PriceScope.STORE,
             shopId = shopId,
-            cached = false
+            cached = false,
+            product = ProductNames.descriptor(productId, title),
+            priceEvidence = ru.pivoskan.app.data.OrdinaryPriceEvidence.CONFIRMED
         )
     }
 
