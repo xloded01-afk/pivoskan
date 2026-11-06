@@ -85,4 +85,15 @@ class CityScanCoordinatorTest {
         assertTrue(source.loaded.isEmpty())
         assertNotEquals(SourcePhase.COMPLETE, repo.read(city.id).sources.single().phase)
     }
+    @Test fun configurationGapDefersRequestsWithoutReplacingRun() {
+        val scheduler = Scheduler(); val repo = CityScanRepository(ScanFixtures.Disk())
+        val source = Source(discovery = DiscoveryResult(listOf(shop("1"),shop("2")),PriceScope.STORE,true))
+        val coordinator = CityScanCoordinator(repo,listOf(source),scheduler,{scheduler.now})
+        val run = coordinator.start(city)
+        coordinator.setRequestAllowed(false); scheduler.settle()
+        assertTrue(source.loaded.isEmpty())
+        coordinator.setRequestAllowed(true); scheduler.settle()
+        assertEquals(run.id, repo.read(city.id).runId)
+        assertEquals(2, source.loaded.size)
+    }
 }

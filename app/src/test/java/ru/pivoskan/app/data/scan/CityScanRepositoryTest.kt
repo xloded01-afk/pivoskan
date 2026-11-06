@@ -79,4 +79,14 @@ class CityScanRepositoryTest {
         catch (_: IllegalArgumentException) { }
         assertTrue(repo.read(cityId).offers.isEmpty())
     }
+    @Test fun repeatedProgressDoesNotRewriteWholeCity() {
+        val disk = Disk(); val repo = CityScanRepository(disk)
+        val run = repo.begin(cityId); repo.commit(run, complete())
+        val before = disk.writes
+        repeat(20) { repo.recordSource(run, SourceProgress("magnit", phase = SourcePhase.RUNNING)) }
+        assertEquals(before, disk.writes)
+        val done = SourceProgress("magnit", phase = SourcePhase.COMPLETE)
+        repo.recordSource(run, done); repo.recordSource(run, done)
+        assertEquals(before + 1, disk.writes)
+    }
 }

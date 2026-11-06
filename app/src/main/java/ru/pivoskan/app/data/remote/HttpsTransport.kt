@@ -8,7 +8,7 @@ import javax.net.ssl.HttpsURLConnection
 import ru.pivoskan.app.data.scan.ScanPolicy
 
 /** Public catalogs only; standard TLS verification, bounded bodies, no credential storage. */
-class HttpsTransport : CancellableHttpTransport {
+class HttpsTransport(private val allowRequest: () -> Boolean = { true }) : CancellableHttpTransport {
     @Volatile private var cancelled = false
     @Volatile private var active: HttpsURLConnection? = null
     private var lastRequestAt = 0L
@@ -77,6 +77,6 @@ class HttpsTransport : CancellableHttpTransport {
         } finally { active = null; connection.disconnect() }
     }
     private fun checkInterrupted() {
-        if (cancelled || Thread.currentThread().isInterrupted) throw InterruptedException()
+        if (cancelled || !allowRequest() || Thread.currentThread().isInterrupted) throw InterruptedException()
     }
 }

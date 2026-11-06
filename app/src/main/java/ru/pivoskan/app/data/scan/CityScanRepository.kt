@@ -63,7 +63,12 @@ class CityScanRepository(private val disk: CityScanDisk,
         val catalogs = if (discovered?.complete == true && discovered.scope == ru.pivoskan.app.data.PriceScope.STORE)
             state.catalogs.map { if (it.key.sourceId == progress.sourceId) it.copy(active = it.key.shopId in ids) else it }
         else state.catalogs
-        persist(state.copy(catalogs = catalogs, sources = state.sources.filterNot { it.sourceId == progress.sourceId } + progress))
+        if (state.sources.find { it.sourceId == progress.sourceId } == progress && catalogs == state.catalogs) return true
+        val next = state.copy(catalogs = catalogs, sources = state.sources.filterNot { it.sourceId == progress.sourceId } + progress)
+        // Transient counters must not rewrite a multi-megabyte city at each progress tick.
+        // Verified catalog commits and terminal source state still use atomic persistence.
+        if (progress.phase in setOf(SourcePhase.WAITING, SourcePhase.RUNNING)) memory[run.cityId] = next
+        else persist(next)
         return true
     }
     @Synchronized fun importVerified(catalog: StoredCatalog) {

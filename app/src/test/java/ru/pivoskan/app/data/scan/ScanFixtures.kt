@@ -14,9 +14,11 @@ internal object ScanFixtures {
     class Disk : CityScanDisk {
         val data = mutableMapOf<String, String>()
         var fail = false
+        var writes = 0
         override fun read(cityId: String) = data[cityId]
         override fun write(cityId: String, json: String) {
             if (fail) throw java.io.IOException("disk full")
+            writes++
             data[cityId] = json
         }
     }

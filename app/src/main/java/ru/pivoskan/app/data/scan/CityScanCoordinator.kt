@@ -21,6 +21,24 @@ class CityScanCoordinator(private val repository: CityScanRepository, private va
     private var elapsed = 0L
     private var tickAt = 0L
     private var watchdog: Cancellable? = null
+    private var requestsAllowed = true
+
+    @Synchronized fun setRequestAllowed(allowed: Boolean) {
+        if (allowed == requestsAllowed) return
+        requestsAllowed = allowed
+        val token = run ?: return
+        if (!allowed) {
+            val cancelled = active.toMap()
+            active.clear()
+            cancelled.forEach { (lane, operation) ->
+                queues.getValue(lane).addFirst(operation.work)
+                operation.cancel.cancel()
+            }
+        } else {
+            tickAt = now()
+            SourceLane.entries.forEach { schedulePump(it,token,0) }; watch(token)
+        }
+    }
 
     @Synchronized fun start(city: City): ScanRun {
         cancel(); this.city = city
@@ -59,7 +77,7 @@ class CityScanCoordinator(private val repository: CityScanRepository, private va
         queues.getValue(source.lane).add(Work(source, true))
         tickAt = now(); schedulePump(source.lane, token, 0); watch(token); publish()
     }
-    private fun hasWork() = active.isNotEmpty() || queues.values.any { it.isNotEmpty() }
+    private fun hasWork() = requestsAllowed && (active.isNotEmpty() || queues.values.any { it.isNotEmpty() })
     private fun expired(): Boolean {
         val at = now()
         if (hasWork()) elapsed += (at - tickAt).coerceAtLeast(0)
@@ -77,7 +95,7 @@ class CityScanCoordinator(private val repository: CityScanRepository, private va
         scheduler.post(delay) { synchronized(this) { if (run == token) pump(lane, token) } }
     }
     private fun pump(lane: SourceLane, token: ScanRun) {
-        if (run != token || expired() || active.containsKey(lane)) return
+        if (run != token || !requestsAllowed || expired() || active.containsKey(lane)) return
         val work = queues.getValue(lane).pollFirst() ?: return
         val operation = Active(work); active[lane] = operation
         val requestedCity = requireNotNull(city)

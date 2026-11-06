@@ -24,5 +24,5 @@ class CatalogViewModel(application: Application) : AndroidViewModel(application)
     fun cancel() { runtime.cancel() }
     fun pauseRefresh() = cancel()
     fun restoreImported(cityId: String) { this.cityId = cityId; runtime.restore(cityId) }
-    fun resumeSource(sourceId: String) { runtime.coordinator.resumeSource(sourceId) }
+    fun resumeSource(sourceId: String) { runtime.resumeSource(sourceId) }
 }
