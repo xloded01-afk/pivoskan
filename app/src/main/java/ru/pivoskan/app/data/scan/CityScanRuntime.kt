@@ -6,7 +6,6 @@ import android.os.PowerManager
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import ru.pivoskan.app.data.CityCatalog
-import ru.pivoskan.app.data.Prefs
 import ru.pivoskan.app.data.remote.*
 import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
@@ -24,6 +23,13 @@ class CityScanRuntime private constructor(context: Context) {
     @Volatile private var requestAllowed = false
     @Volatile private var serviceRunning = false
     private var started = false
+    private var screenTaskId: Int? = null
+    private val sessionPrefs = this.context.getSharedPreferences("scan_launch_session", Context.MODE_PRIVATE)
+    private val boot = android.provider.Settings.Global.getInt(this.context.contentResolver,
+        android.provider.Settings.Global.BOOT_COUNT, 0)
+    private val autoSession = AutoScanSession(
+        sessionPrefs.getString("key", null).takeIf { sessionPrefs.getInt("boot", -1) == boot }
+    ) { key -> check(sessionPrefs.edit().putInt("boot", boot).putString("key", key).commit()) }
     private val generation = AtomicLong()
     private val scheduler = ScanScheduler { delay, action ->
         val task = serial.schedule(action, delay, TimeUnit.MILLISECONDS)
@@ -51,16 +57,26 @@ class CityScanRuntime private constructor(context: Context) {
     }
     @Synchronized fun selectCity(cityId: String, force: Boolean = false) {
         if (CityCatalog.city(cityId) == null) return
-        if (!visible || (!force && started && currentCityId == cityId)) { restore(cityId); return }
+        val task = screenTaskId ?: return
+        if (!visible) { restore(cityId); return }
+        var reserved = false
         try {
+            if (!autoSession.request(task, cityId, force)) { restore(cityId); return }
+            reserved = true
             androidx.core.content.ContextCompat.startForegroundService(context,
                 android.content.Intent(context, ru.pivoskan.app.CityScanService::class.java)
-                    .putExtra("city", cityId).putExtra("force", force))
+                    .putExtra("city", cityId).putExtra("force", true))
         } catch (_: RuntimeException) {
+            if (reserved) runCatching { autoSession.launchFailed() }
             android.os.Handler(android.os.Looper.getMainLooper()).post {
                 android.widget.Toast.makeText(context, "Не удалось запустить фоновый обход. Откройте приложение и повторите.", android.widget.Toast.LENGTH_LONG).show()
             }
         }
+    }
+    @Synchronized fun openScreen(cityId: String, taskId: Int) {
+        screenTaskId = taskId
+        if (currentCityId == null) currentCityId = cityId
+        selectCity(cityId)
     }
     @Synchronized private fun beginCity(cityId: String, force: Boolean) {
         val city = CityCatalog.city(cityId) ?: return
@@ -84,8 +100,7 @@ class CityScanRuntime private constructor(context: Context) {
     @Synchronized fun visibilityChanged(value: Boolean) {
         if (visible == value) return
         visible = value
-        // Visibility does not own a service-backed run; returning must not duplicate it.
-        if (value && !started) (currentCityId ?: Prefs(context).cityId)?.let { selectCity(it) }
+        // Visibility only controls access; opening a screen/task owns automatic launch.
     }
     @Synchronized fun requestsAllowed(value: Boolean) {
         requestAllowed = value; coordinator.setRequestAllowed(value || serviceRunning)

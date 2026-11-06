@@ -8,6 +8,15 @@ import ru.pivoskan.app.data.scan.ScanFixtures.offer
 import ru.pivoskan.app.data.scan.ScanFixtures.Disk
 
 class CityScanRepositoryTest {
+    @Test fun processRecoveryDoesNotRestorePhantomRunningState() {
+        val disk = Disk(); val repo = CityScanRepository(disk)
+        val run = repo.begin(city.id)
+        repo.recordSource(run, SourceProgress("magnit", phase = SourcePhase.RUNNING))
+        repo.commit(run, complete())
+        val restored = CityScanRepository(disk).read(city.id)
+        assertEquals(SourcePhase.PARTIAL, restored.sources.single().phase)
+        assertNull(restored.sources.single().current)
+    }
     private val cityId = city.id
     @Test fun twoMagnitShopsSurviveRestart() {
         val disk = Disk()

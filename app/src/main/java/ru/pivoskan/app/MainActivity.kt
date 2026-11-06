@@ -186,7 +186,7 @@ class MainActivity : AppCompatActivity() {
             getPreferences(MODE_PRIVATE).edit().putBoolean("notificationAsked", true).apply()
             notificationsPermission.launch(android.Manifest.permission.POST_NOTIFICATIONS)
         }
-        catalog.load(cityId)
+        catalog.openScreen(cityId, taskId)
         render(resetScroll = false)
     }
 
@@ -195,7 +195,7 @@ class MainActivity : AppCompatActivity() {
         if (::binding.isInitialized && prefs.cityId != cityId) {
             // Also handles returning from a picker without recreating this activity.
             recreate()
-        }
+        } else if (::catalog.isInitialized) catalog.openScreen(cityId, taskId)
     }
 
     private fun buildChips() {

@@ -34,7 +34,11 @@ class CityScanCodec {
             CityCatalog.store(source.sourceId) != null && source.results.keys.all {
                 it.cityId == cityId && it.sourceId == source.sourceId
             } && source.discovery?.shops.orEmpty().all { it.cityId == cityId }
-        }.getOrDefault(false) }
+        }.getOrDefault(false) }.map { source ->
+            if (source.phase in setOf(SourcePhase.WAITING, SourcePhase.RUNNING))
+                source.copy(phase = SourcePhase.PARTIAL, current = null)
+            else source
+        }
         value.copy(runId = null, catalogs = catalogs, sources = sources)
     }.getOrNull()
 

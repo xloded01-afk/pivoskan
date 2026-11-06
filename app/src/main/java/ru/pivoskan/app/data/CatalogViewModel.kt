@@ -18,6 +18,7 @@ class CatalogViewModel(application: Application) : AndroidViewModel(application)
         } }
     }
     val state: LiveData<CatalogUiState> = mutable
+    fun openScreen(cityId: String, taskId: Int) { this.cityId = cityId; runtime.openScreen(cityId, taskId) }
     fun selectCity(cityId: String) { this.cityId = cityId; runtime.selectCity(cityId) }
     fun load(cityId: String, force: Boolean = false) { this.cityId = cityId; runtime.selectCity(cityId, force) }
     fun refresh() { cityId?.let { runtime.selectCity(it, true) } }
