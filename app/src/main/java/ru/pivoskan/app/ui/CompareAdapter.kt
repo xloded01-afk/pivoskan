@@ -19,7 +19,11 @@ class CompareAdapter(
     private val onOfferClick: (Offer) -> Unit
 ) : RecyclerView.Adapter<CompareAdapter.ViewHolder>() {
     private val items = offers.sortedWith(compareBy<Offer> { it.priceKopecks }.thenBy { it.store.id }.thenBy { it.id })
-    private val cheapestPrice = items.minOfOrNull { it.priceKopecks }
+    private val eligible = items.filter { it.scope == PriceScope.STORE &&
+        it.priceEvidence == ru.pivoskan.app.data.OrdinaryPriceEvidence.CONFIRMED &&
+        (it.maxPriceKopecks ?: it.priceKopecks) == it.priceKopecks }
+    private val candidates = eligible.filter { !it.cached }.ifEmpty { eligible }
+    private val cheapestPrice = candidates.minOfOrNull { it.priceKopecks }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int) = ViewHolder(
         ItemCompareBinding.inflate(LayoutInflater.from(parent.context), parent, false)
@@ -34,7 +38,7 @@ class CompareAdapter(
             val context = root.context
             val current = offer.id == currentOfferId
             val maximumPrice = offer.maxPriceKopecks?.takeIf { it > offer.priceKopecks }
-            val cheapest = offer.priceKopecks == cheapestPrice && maximumPrice == null
+            val cheapest = offer in candidates && offer.priceKopecks == cheapestPrice && maximumPrice == null
             val priceText = if (maximumPrice != null) {
                 context.getString(R.string.details_price_range, formatMoney(offer.priceKopecks), formatMoney(maximumPrice))
             } else formatMoney(offer.priceKopecks)
@@ -46,6 +50,9 @@ class CompareAdapter(
                 context.getString(R.string.details_compare_store_address, offer.address)
             } else context.getString(R.string.details_address_unknown)
             if (offer.cached) scope.text = context.getString(R.string.live_cached_item, scope.text)
+            scope.text = "${scope.text} · ${java.text.DateFormat.getDateTimeInstance().format(java.util.Date(offer.fetchedAt))}"
+            if (offer.priceEvidence != ru.pivoskan.app.data.OrdinaryPriceEvidence.CONFIRMED)
+                scope.append(" · обычная цена не подтверждена")
             cardPrice.isVisible = offer.cardPriceKopecks != null
             cardPrice.text = offer.cardPriceKopecks?.let {
                 context.getString(R.string.details_card_price, formatMoney(it))

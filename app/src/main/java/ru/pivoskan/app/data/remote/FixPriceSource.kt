@@ -134,7 +134,9 @@ class FixPriceSource(
             cardPriceKopecks = card?.priceKopecks,
             validUntil = card?.validUntil,
             maxPriceKopecks = maximum.takeIf { it > minimum },
-            product = ProductNames.descriptor(sku, title, brand),
+            product = ProductNames.descriptor(sku, title, brand).copy(imageUrl = product["images"]
+                ?.takeIf { it.isJsonArray }?.asJsonArray?.firstOrNull()?.takeIf { it.isJsonObject }
+                ?.asJsonObject?.text("src")?.takeIf(ru.pivoskan.app.ui.ProductImagePolicy::allowed)),
             priceEvidence = ru.pivoskan.app.data.OrdinaryPriceEvidence.CONFIRMED
         )
     }

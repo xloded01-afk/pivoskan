@@ -41,6 +41,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var binding: ActivityMainBinding
     private lateinit var prefs: Prefs
     private lateinit var adapter: BeerAdapter
+    private lateinit var images: ru.pivoskan.app.ui.ProductImageLoader
     private var cityId = ""
     private val selectedStores = mutableSetOf<String>()
     private var search = ""
@@ -54,6 +55,19 @@ class MainActivity : AppCompatActivity() {
     private var snapshot: CatalogSnapshot? = null
     private var cityScan: CityScanSnapshot? = null
     private var loading = false
+    private var pendingReport: String? = null
+    private val exportReport = registerForActivityResult(ActivityResultContracts.CreateDocument("application/json")) { uri ->
+        val report = pendingReport
+        pendingReport = null
+        if (uri != null && report != null) {
+            val resolver = applicationContext.contentResolver
+            Thread {
+                val saved = runCatching { requireNotNull(resolver.openOutputStream(uri)).bufferedWriter().use { it.write(report) } }.isSuccess
+                runOnUiThread { android.widget.Toast.makeText(this,
+                    if (saved) "Отчёт сохранён" else "Не удалось сохранить отчёт", android.widget.Toast.LENGTH_LONG).show() }
+            }.start()
+        }
+    }
     private val catalogBrowser = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) {
         if (::catalog.isInitialized) {
             // Always reread: a successful save can outlive a browser activity's rotation.
@@ -90,6 +104,22 @@ class MainActivity : AppCompatActivity() {
             insets
         }
         binding.toolbar.title = city.name
+        binding.toolbar.menu.add("Сохранить отчёт об источниках").setOnMenuItemClickListener {
+            val current = cityScan
+            val now = System.currentTimeMillis()
+            val events = current?.sources.orEmpty().flatMap { source ->
+                listOf(ScanDiagnosticEvent(current?.runId ?: "historical", source.sourceId, null, "discover",
+                    source.discovery?.problem?.code ?: if (source.discovery?.complete == true) "OK" else "INCOMPLETE_LIST",
+                    now, source.discovery?.shops?.size ?: 0)) + source.results.map { (key, problem) ->
+                    ScanDiagnosticEvent(current?.runId ?: "historical", source.sourceId, key.shopId, "load", problem?.code ?: "OK", now, 0)
+                }
+            }
+            val version = packageManager.getPackageInfo(packageName, 0).versionName ?: "unknown"
+            val webVersion = if (android.os.Build.VERSION.SDK_INT >= 26) android.webkit.WebView.getCurrentWebViewPackage()?.versionName else null
+            pendingReport = ScanDiagnostics.export(events, version, android.os.Build.VERSION.RELEASE, webVersion ?: "unknown")
+            exportReport.launch("pivoskan-sources.json")
+            true
+        }
         binding.toolbar.contentDescription = getString(R.string.city_accessibility, city.name)
         binding.toolbar.setOnMenuItemClickListener { item ->
             when (item.itemId) {
@@ -103,7 +133,10 @@ class MainActivity : AppCompatActivity() {
             }
             true
         }
-        adapter = BeerAdapter { BeerDetailsActivity.start(this, it, cityId) }
+        images = ru.pivoskan.app.ui.ProductImageLoader(this)
+        adapter = BeerAdapter(images) { BeerDetailsActivity.start(this, it, cityId) }
+        if (savedInstanceState?.getString("city") == cityId)
+            adapter.expanded.addAll(savedInstanceState.getStringArrayList("expanded").orEmpty())
         binding.beerList.layoutManager = LinearLayoutManager(this)
         binding.beerList.adapter = adapter
         binding.beerList.itemAnimator = null
@@ -187,10 +220,10 @@ class MainActivity : AppCompatActivity() {
 
     private fun render(resetScroll: Boolean) {
         handler.removeCallbacks(updateSearch)
-        val rows = PriceEngine.query(snapshot?.offers.orEmpty(), selectedStores, search, sort)
-        binding.resultCount.text = if (rows.isEmpty()) getString(R.string.results_none) else getString(
-            R.string.results_from, resources.getQuantityString(R.plurals.offer_count, rows.size, rows.size),
-            formatMoney(rows.minOf { it.offer.priceKopecks }))
+        val rows = PriceEngine.products(cityScan ?: ru.pivoskan.app.data.scan.CityScanSnapshot(cityId, null), selectedStores, search, sort)
+        val minimum = rows.mapNotNull { it.minimum?.priceKopecks }.minOrNull()
+        binding.resultCount.text = if (rows.isEmpty()) getString(R.string.results_none)
+            else "Товаров: ${rows.size}" + (minimum?.let { " · от ${formatMoney(it)}" } ?: "")
         binding.beerList.isVisible = rows.isNotEmpty()
         binding.emptyState.root.isVisible = rows.isEmpty()
         val noData = snapshot?.offers.isNullOrEmpty()
@@ -357,6 +390,7 @@ class MainActivity : AppCompatActivity() {
     override fun onSaveInstanceState(outState: Bundle) {
         if (::binding.isInitialized) {
             outState.putString("city", cityId)
+            if (::adapter.isInitialized) outState.putStringArrayList("expanded", ArrayList(adapter.expanded))
             outState.putStringArrayList("stores", ArrayList(selectedStores))
             outState.putString("search", search)
             outState.putString("sort", sort.name)
@@ -366,6 +400,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     override fun onDestroy() {
+        if (::images.isInitialized) images.close()
         handler.removeCallbacks(updateSearch)
         super.onDestroy()
     }

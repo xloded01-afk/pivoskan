@@ -188,7 +188,12 @@ class BeerDetailsActivity : AppCompatActivity() {
             copyAddress.setOnClickListener { copyStoreAddress(offer, city) }
         }
 
-        val alternatives = PriceEngine.alternatives(snapshot.offers, offer.beer.id)
+        val key = ru.pivoskan.app.data.ProductIdentity.key(offer.store.id,
+            offer.product ?: ru.pivoskan.app.data.ProductDescriptor(offer.beer.id))
+        val alternatives = snapshot.offers.filter {
+            ru.pivoskan.app.data.ProductIdentity.key(it.store.id,
+                it.product ?: ru.pivoskan.app.data.ProductDescriptor(it.beer.id)) == key
+        }
         comparisonSection.isVisible = alternatives.size > 1
         comparisonList.layoutManager = LinearLayoutManager(this@BeerDetailsActivity)
         comparisonList.isNestedScrollingEnabled = false
