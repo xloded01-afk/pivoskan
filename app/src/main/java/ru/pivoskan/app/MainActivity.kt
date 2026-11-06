@@ -55,6 +55,10 @@ class MainActivity : AppCompatActivity() {
     private var snapshot: CatalogSnapshot? = null
     private var cityScan: CityScanSnapshot? = null
     private var loading = false
+    private val notificationsPermission = registerForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
+        if (!granted) android.widget.Toast.makeText(this,
+            "Фоновый обход работает; разрешите уведомления в настройках, чтобы видеть прогресс и кнопку остановки.", android.widget.Toast.LENGTH_LONG).show()
+    }
     private var pendingReport: String? = null
     private val exportReport = registerForActivityResult(ActivityResultContracts.CreateDocument("application/json")) { uri ->
         val report = pendingReport
@@ -176,6 +180,12 @@ class MainActivity : AppCompatActivity() {
             updateSourceControls()
             render(resetScroll = false)
         }
+        if (android.os.Build.VERSION.SDK_INT >= 33 && savedInstanceState == null &&
+            androidx.core.content.ContextCompat.checkSelfPermission(this, android.Manifest.permission.POST_NOTIFICATIONS) !=
+                android.content.pm.PackageManager.PERMISSION_GRANTED && !prefsNoticeAsked()) {
+            getPreferences(MODE_PRIVATE).edit().putBoolean("notificationAsked", true).apply()
+            notificationsPermission.launch(android.Manifest.permission.POST_NOTIFICATIONS)
+        }
         catalog.load(cityId)
         render(resetScroll = false)
     }
@@ -249,6 +259,7 @@ class MainActivity : AppCompatActivity() {
             }
         }
     }
+    private fun prefsNoticeAsked() = getPreferences(MODE_PRIVATE).getBoolean("notificationAsked", false)
 
     private fun resetFilters() {
         selectedStores.clear()

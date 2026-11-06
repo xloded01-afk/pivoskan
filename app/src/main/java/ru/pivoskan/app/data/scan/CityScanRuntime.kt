@@ -22,6 +22,7 @@ class CityScanRuntime private constructor(context: Context) {
     @Volatile private var currentCityId: String? = null
     @Volatile private var visible = false
     @Volatile private var requestAllowed = false
+    @Volatile private var serviceRunning = false
     private var started = false
     private val generation = AtomicLong()
     private val scheduler = ScanScheduler { delay, action ->
@@ -33,33 +34,61 @@ class CityScanRuntime private constructor(context: Context) {
             MagnitCitySource(network, { HttpsTransport(::canRequestNow) }),
             UnavailableCitySource("dixy"),UnavailableCitySource("pyaterochka")),
         scheduler, onSnapshot = { mutable.postValue(it) })
-    private fun canRequestNow() = visible && requestAllowed &&
+    private fun canRequestNow() = BackgroundScanPolicy.canRequest(visible, requestAllowed &&
         context.getSystemService(PowerManager::class.java).isInteractive &&
-        !context.getSystemService(KeyguardManager::class.java).isKeyguardLocked
+        !context.getSystemService(KeyguardManager::class.java).isKeyguardLocked, serviceRunning)
+    @Synchronized fun serviceStarted(cityId: String, force: Boolean) {
+        serviceRunning = true
+        coordinator.setRequestAllowed(true)
+        beginCity(cityId, force)
+    }
+    @Synchronized fun serviceStopped() {
+        serviceRunning = false
+        generation.incrementAndGet()
+        val running = mutable.value?.sources.orEmpty().any { it.phase in setOf(SourcePhase.WAITING, SourcePhase.RUNNING) }
+        if (running) coordinator.cancel()
+        coordinator.setRequestAllowed(requestAllowed)
+    }
     @Synchronized fun selectCity(cityId: String, force: Boolean = false) {
+        if (CityCatalog.city(cityId) == null) return
+        if (!visible || (!force && started && currentCityId == cityId)) { restore(cityId); return }
+        try {
+            androidx.core.content.ContextCompat.startForegroundService(context,
+                android.content.Intent(context, ru.pivoskan.app.CityScanService::class.java)
+                    .putExtra("city", cityId).putExtra("force", force))
+        } catch (_: RuntimeException) {
+            android.os.Handler(android.os.Looper.getMainLooper()).post {
+                android.widget.Toast.makeText(context, "Не удалось запустить фоновый обход. Откройте приложение и повторите.", android.widget.Toast.LENGTH_LONG).show()
+            }
+        }
+    }
+    @Synchronized private fun beginCity(cityId: String, force: Boolean) {
         val city = CityCatalog.city(cityId) ?: return
         if (currentCityId != cityId) {
             currentCityId = cityId; generation.incrementAndGet(); started = false; coordinator.cancel()
         }
-        if (!visible || (!force && started)) { restore(cityId); return }
+        if ((!visible && !serviceRunning) || (!force && started)) { restore(cityId); return }
         if (force) { generation.incrementAndGet(); coordinator.cancel() }
         started = true
         val token = generation.get()
         serial.execute {
             synchronized(this) {
-                if (visible && token == generation.get() && currentCityId == cityId) coordinator.start(city)
+                if ((visible || serviceRunning) && token == generation.get() && currentCityId == cityId) coordinator.start(city)
             }
         }
     }
-    @Synchronized fun cancel() { generation.incrementAndGet(); coordinator.cancel() }
+    @Synchronized fun cancel() {
+        generation.incrementAndGet(); started = true; coordinator.cancel()
+        context.stopService(android.content.Intent(context, ru.pivoskan.app.CityScanService::class.java))
+    }
     @Synchronized fun visibilityChanged(value: Boolean) {
         if (visible == value) return
-        visible = value; generation.incrementAndGet(); started = false
-        if (!value) coordinator.cancel()
-        else (currentCityId ?: Prefs(context).cityId)?.let { selectCity(it) }
+        visible = value
+        // Visibility does not own a service-backed run; returning must not duplicate it.
+        if (value && !started) (currentCityId ?: Prefs(context).cityId)?.let { selectCity(it) }
     }
     @Synchronized fun requestsAllowed(value: Boolean) {
-        requestAllowed = value; coordinator.setRequestAllowed(value)
+        requestAllowed = value; coordinator.setRequestAllowed(value || serviceRunning)
     }
     fun restore(cityId: String) { serial.execute { if (currentCityId == cityId) mutable.postValue(repository.read(cityId)) } }
     fun resumeSource(sourceId: String) { serial.execute { if (canRequestNow()) coordinator.resumeSource(sourceId) } }

@@ -55,7 +55,6 @@ class CityScanCoordinator(private val repository: CityScanRepository, private va
     @Synchronized fun cancel() { stop(false) }
     private fun stop(limit: Boolean) {
         val token = run ?: return
-        repository.invalidate(token); run = null
         watchdog?.cancel(); watchdog = null
         active.values.forEach { it.cancel.cancel() }; active.clear()
         queues.values.forEach { it.clear() }
@@ -66,7 +65,11 @@ class CityScanCoordinator(private val repository: CityScanRepository, private va
                     if (limit) it.copy(problem = SourceProblem(ProblemKind.LIMIT,"load","LIMIT")) else it
                 })
         }
-        onSnapshot(repository.read(token.cityId).copy(sources = states.values.toList()))
+        // Persist terminal phases before invalidating the generation so reopening cannot
+        // restore a phantom RUNNING state. Keep the presentation's run identity for service ownership.
+        states.values.forEach { state -> runCatching { repository.recordSource(token, state) } }
+        repository.invalidate(token); run = null
+        onSnapshot(repository.read(token.cityId).copy(runId = token.id, sources = states.values.toList()))
     }
     @Synchronized fun resumeSource(sourceId: String) {
         val source = sources.find { it.id == sourceId } ?: return

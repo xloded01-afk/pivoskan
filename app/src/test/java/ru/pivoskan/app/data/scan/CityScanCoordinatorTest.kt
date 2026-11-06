@@ -5,6 +5,17 @@ import org.junit.Test
 import ru.pivoskan.app.data.*
 
 class CityScanCoordinatorTest {
+    @Test fun cancellationIsStoredForReturnToApplication() {
+        val scheduler = Scheduler(); val repo = CityScanRepository(ScanFixtures.Disk())
+        val source = Source(discovery = DiscoveryResult(listOf(shop("502731")), PriceScope.STORE, true))
+        var last: CityScanSnapshot? = null
+        val coordinator = CityScanCoordinator(repo, listOf(source), scheduler, { scheduler.now }, { last = it })
+        val run = coordinator.start(city)
+        coordinator.cancel()
+        assertEquals(SourcePhase.CANCELLED, repo.read(city.id).sources.single().phase)
+        assertEquals(run.id, last!!.runId)
+        assertNull(repo.read(city.id).runId)
+    }
     private val city = ScanFixtures.city
     private fun shop(id: String) = RemoteShop(id, city.id, ScanFixtures.offer(id).address)
     private class Scheduler : ScanScheduler {
