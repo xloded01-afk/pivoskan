@@ -5,6 +5,20 @@ import org.junit.Test
 import ru.pivoskan.app.data.remote.SourceException
 
 class CatalogLoaderTest {
+    @Test fun `old schema restores missing defaults without discarding offers`() {
+        val codec = SnapshotCodec()
+        val snapshot = CatalogSnapshot(city.id, shop, listOf(shop), listOf(offer()), emptyList(), 1000)
+        val json = com.google.gson.JsonParser.parseString(codec.encode(snapshot)).asJsonObject
+        val cached = json.getAsJsonObject("snapshot").getAsJsonArray("offers")[0].asJsonObject
+        cached.remove("priceEvidence")
+        cached.remove("hours")
+        val restored = codec.decode(json.toString(), city.id)!!.offers.single()
+        assertEquals(8799, restored.priceKopecks)
+        assertEquals(1000L, restored.fetchedAt)
+        assertEquals(OrdinaryPriceEvidence.UNKNOWN, restored.priceEvidence)
+        assertEquals("", restored.hours)
+        assertTrue(restored.cached)
+    }
     private val city = CityCatalog.city("balashikha")!!
     private val shop = RemoteShop("502731", city.id, "Московская обл, Балашиха, ул Кудаковского, 11")
     private fun offer(store: String = "magnit", shopId: String? = shop.id) = Offer(

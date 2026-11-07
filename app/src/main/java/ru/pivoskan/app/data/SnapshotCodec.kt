@@ -15,6 +15,9 @@ class SnapshotCodec {
     fun decode(json: String, cityId: String): CatalogSnapshot? = try {
         val envelope = JsonParser.parseString(json).asJsonObject
         require(envelope.get("schema").asInt == 1)
+        envelope.getAsJsonObject("snapshot").getAsJsonArray("offers").forEach {
+            CachedOfferDefaults.apply(it.asJsonObject)
+        }
         val value = gson.fromJson(envelope.get("snapshot"), CatalogSnapshot::class.java)
         require(value.cityId == cityId && CityCatalog.city(cityId) != null && value.updatedAt > 0)
         require(value.shops.all { it.cityId == cityId })

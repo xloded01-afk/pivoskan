@@ -3,6 +3,7 @@ package ru.pivoskan.app.data.scan
 import com.google.gson.Gson
 import com.google.gson.JsonParser
 import ru.pivoskan.app.data.Offer
+import ru.pivoskan.app.data.CachedOfferDefaults
 
 object LegacyCatalogMigration {
     fun decode(json: String, cityId: String): List<StoredCatalog> = runCatching {
@@ -13,6 +14,7 @@ object LegacyCatalogMigration {
         require(snapshot.get("cityId").asString == cityId)
         val gson = Gson()
         snapshot.getAsJsonArray("offers").mapNotNull { item -> runCatching {
+            CachedOfferDefaults.apply(item.asJsonObject)
             val offer = gson.fromJson(item, Offer::class.java)
             val key = CatalogKey(cityId, offer.store.id, offer.shopId)
             StoredCatalog(key, listOf(offer), offer.fetchedAt, null, complete = false)

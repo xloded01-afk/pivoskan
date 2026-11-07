@@ -21,9 +21,7 @@ class CityScanCodec {
         // Gson bypasses Kotlin defaults for old records. Fill absent enum values before decoding.
         root.getAsJsonObject("snapshot").getAsJsonArray("catalogs").forEach { catalog ->
             catalog.asJsonObject.getAsJsonArray("offers").forEach { entry ->
-                val offer = entry.asJsonObject
-                if (offer.get("priceEvidence")?.takeUnless { it.isJsonNull } == null)
-                    offer.addProperty("priceEvidence", OrdinaryPriceEvidence.UNKNOWN.name)
+                CachedOfferDefaults.apply(entry.asJsonObject)
             }
         }
         val value = gson.fromJson(root.get("snapshot"), CityScanSnapshot::class.java)
@@ -53,6 +51,13 @@ class CityScanCodec {
             if (key.sourceId != "fixprice" && key.shopId == null) return false
             val ids = mutableSetOf<String>()
             catalog.offers.all { offer ->
+                // Gson can populate null even in Kotlin non-null properties. Reject at the boundary.
+                requireNotNull(offer.hours)
+                requireNotNull(offer.priceEvidence)
+                requireNotNull(offer.beer.brand)
+                requireNotNull(offer.beer.packageName)
+                requireNotNull(offer.store.name)
+                requireNotNull(offer.store.shortName)
                 val uri = URI(offer.sourceUrl)
                 val host = when (key.sourceId) { "magnit" -> "magnit.ru"; "fixprice" -> "fix-price.com"; "dixy" -> "dixy.ru"; else -> "5ka.ru" }
                 offer.cityId == city.id && offer.store.id == key.sourceId && offer.shopId == key.shopId &&

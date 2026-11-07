@@ -28,8 +28,8 @@ android {
         applicationId = "ru.pivoskan.app"
         minSdk = 24
         targetSdk = 35
-        versionCode = 7
-        versionName = "1.4.2-test"
+        versionCode = 8
+        versionName = "1.4.3-test"
     }
 
     signingConfigs {

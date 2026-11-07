@@ -27,4 +27,22 @@ class ProductMetadataTest {
             .replace(",\"priceEvidence\":\"CONFIRMED\"", "")
         assertEquals(OrdinaryPriceEvidence.UNKNOWN, codec.decode(json, "balashikha")!!.offers.single().priceEvidence)
     }
+    @Test fun cachedNullHoursAndUnknownEvidenceCannotCrashOfferCopy() {
+        val tree = com.google.gson.JsonParser.parseString(codec.encode(snapshot())).asJsonObject
+        val offer = tree.getAsJsonObject("snapshot").getAsJsonArray("catalogs")[0].asJsonObject
+            .getAsJsonArray("offers")[0].asJsonObject
+        offer.add("hours", com.google.gson.JsonNull.INSTANCE)
+        offer.addProperty("priceEvidence", "future-value")
+        val restored = codec.decode(tree.toString(), "balashikha")!!.asLegacySnapshot().offers.single()
+        assertEquals("", restored.hours)
+        assertEquals(OrdinaryPriceEvidence.UNKNOWN, restored.priceEvidence)
+        assertTrue(restored.cached)
+    }
+    @Test fun invalidNullEvidenceCannotEnterRepositoryUnvalidated() {
+        val record = snapshot().catalogs.single()
+        val unsafe = com.google.gson.Gson().fromJson(
+            com.google.gson.Gson().toJson(record).replace("\"priceEvidence\":\"CONFIRMED\"", "\"priceEvidence\":null"),
+            StoredCatalog::class.java)
+        assertFalse(CityScanCodec.valid(unsafe))
+    }
 }
