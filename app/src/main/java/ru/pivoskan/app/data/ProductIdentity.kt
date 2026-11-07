@@ -33,6 +33,12 @@ object ProductIdentity {
         }
         val serialized = (identity + attributes).joinToString("") { if (it == null) "-1:" else "${it.length}:$it" }
         return MessageDigest.getInstance("SHA-256").digest(serialized.toByteArray(Charsets.UTF_8))
-            .joinToString("") { "%02x".format(it.toInt() and 255) }
+            .let { bytes ->
+                val hex = "0123456789abcdef"
+                buildString(64) { bytes.forEach { byte ->
+                    val value = byte.toInt() and 255
+                    append(hex[value ushr 4]); append(hex[value and 15])
+                } }
+            }
     }
 }

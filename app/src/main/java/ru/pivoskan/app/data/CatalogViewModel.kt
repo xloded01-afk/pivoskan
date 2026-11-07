@@ -13,7 +13,7 @@ class CatalogViewModel(application: Application) : AndroidViewModel(application)
     private var cityId: String? = null
     private val mutable = MediatorLiveData<CatalogUiState>().apply {
         addSource(runtime.state) { snapshot -> if (snapshot.cityId == cityId) {
-            value = CatalogUiState(snapshot.asLegacySnapshot(), snapshot.sources.any {
+            value = CatalogUiState(null, snapshot.sources.any {
                 it.phase in setOf(SourcePhase.WAITING, SourcePhase.RUNNING) }, snapshot)
         } }
     }

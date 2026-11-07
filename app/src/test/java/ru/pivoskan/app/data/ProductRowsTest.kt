@@ -5,6 +5,23 @@ import org.junit.Test
 import ru.pivoskan.app.data.scan.*
 
 class ProductRowsTest {
+    @Test fun largeCityRetainsEveryAddressAndFreshMinimum() {
+        val catalogs = (1..63).map { shop ->
+            val entries = (1..200).map { product -> offer(shop.toString(), 10000 + shop).copy(
+                id = "$shop-$product", product = ProductDescriptor(product.toString(), volumeMl = 500),
+                beer = offer().beer.copy(id = product.toString())) }
+            StoredCatalog(CatalogKey("balashikha", "magnit", shop.toString()), entries, 100, "run")
+        }
+        val start = System.nanoTime()
+        val result = PriceEngine.products(CityScanSnapshot("balashikha", "run", catalogs), emptySet(), "", SortMode.CHEAPEST)
+        println("12600 offers grouped in ${(System.nanoTime() - start) / 1000000} ms")
+        assertEquals(200, result.size)
+        result.forEach { row ->
+            assertEquals(63, row.fresh.size)
+            assertEquals(10001, row.minimum!!.priceKopecks)
+            assertFalse(row.minimumIsHistorical)
+        }
+    }
     private fun offer(shop: String = "502731", price: Int = 10000) = ScanFixtures.offer(shop, price).copy(
         product = ProductDescriptor("123", volumeMl = 500, packageType = "can"),
         priceEvidence = OrdinaryPriceEvidence.CONFIRMED)

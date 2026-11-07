@@ -28,7 +28,8 @@ class CityScanService : Service() {
                 val total = snapshot.sources.sumOf { source -> source.discovery?.let {
                     if (it.scope == ru.pivoskan.app.data.PriceScope.CITY_CATALOG) 1 else it.shops.size
                 } ?: 0 }
-                val text = "Проверено: $count/$total · предложений: ${snapshot.offers.size}"
+                val offerCount = snapshot.catalogs.sumOf { if (it.active) it.offers.size else 0 }
+                val text = "Проверено: $count/$total · предложений: $offerCount"
                 if (text != lastText) {
                     lastText = text
                     getSystemService(NotificationManager::class.java).notify(ID, notification(text))

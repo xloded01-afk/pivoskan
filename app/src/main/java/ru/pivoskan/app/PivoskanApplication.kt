@@ -16,6 +16,7 @@ class PivoskanApplication : Application(), Application.ActivityLifecycleCallback
     private lateinit var visibility: ScanVisibility
     override fun onCreate() {
         super.onCreate()
+        CrashDiagnostics.install(this)
         val runtime = CityScanRuntime.get(this)
         visibility = ScanVisibility({ runtime.visibilityChanged(it == VisibilityTransition.VISIBLE) }, runtime::requestsAllowed)
         registerActivityLifecycleCallbacks(this)

@@ -50,6 +50,11 @@ class MainActivity : AppCompatActivity() {
     private val chips = linkedMapOf<String, Chip>()
     private val handler = Handler(Looper.getMainLooper())
     private val updateSearch = Runnable { render(resetScroll = true) }
+    private val renderWorker = java.util.concurrent.Executors.newSingleThreadExecutor()
+    private val renderer = ru.pivoskan.app.data.LatestTaskRunner(renderWorker,
+        java.util.concurrent.Executor { handler.post(it) })
+    private var pendingResetScroll = false
+    private var renderContext: List<Any?>? = null
     private var pendingScroll: Parcelable? = null
     private lateinit var catalog: CatalogViewModel
     private var snapshot: CatalogSnapshot? = null
@@ -120,7 +125,10 @@ class MainActivity : AppCompatActivity() {
             }
             val version = packageManager.getPackageInfo(packageName, 0).versionName ?: "unknown"
             val webVersion = if (android.os.Build.VERSION.SDK_INT >= 26) android.webkit.WebView.getCurrentWebViewPackage()?.versionName else null
-            pendingReport = ScanDiagnostics.export(events, version, android.os.Build.VERSION.RELEASE, webVersion ?: "unknown")
+            val report = com.google.gson.JsonParser.parseString(
+                ScanDiagnostics.export(events, version, android.os.Build.VERSION.RELEASE, webVersion ?: "unknown")).asJsonObject
+            CrashDiagnostics.read(this)?.let { report.addProperty("lastCrash", it) }
+            pendingReport = report.toString()
             exportReport.launch("pivoskan-sources.json")
             true
         }
@@ -175,7 +183,6 @@ class MainActivity : AppCompatActivity() {
         catalog = ViewModelProvider(this)[CatalogViewModel::class.java]
         catalog.state.observe(this) { state ->
             cityScan = state.scan?.takeIf { it.cityId == cityId }
-            snapshot = state.snapshot?.takeIf { it.cityId == cityId }
             loading = state.loading
             updateSourceControls()
             render(resetScroll = false)
@@ -230,7 +237,26 @@ class MainActivity : AppCompatActivity() {
 
     private fun render(resetScroll: Boolean) {
         handler.removeCallbacks(updateSearch)
-        val rows = PriceEngine.products(cityScan ?: ru.pivoskan.app.data.scan.CityScanSnapshot(cityId, null), selectedStores, search, sort)
+        pendingResetScroll = pendingResetScroll || resetScroll
+        val scan = cityScan ?: CityScanSnapshot(cityId, null)
+        val stores = selectedStores.toSet()
+        val query = search
+        val order = sort
+        val nextContext = listOf(scan.cityId, scan.runId, stores, query, order)
+        val changedContext = renderContext != nextContext
+        renderContext = nextContext
+        renderer.submit({
+            scan.asLegacySnapshot() to PriceEngine.products(scan, stores, query, order)
+        }, { (legacy, rows) ->
+            snapshot = legacy
+            updateSourceControls()
+            val reset = pendingResetScroll
+            pendingResetScroll = false
+            showRows(rows, reset)
+        }, supersedeRunning = changedContext)
+    }
+
+    private fun showRows(rows: List<ru.pivoskan.app.data.ProductRow>, resetScroll: Boolean) {
         val minimum = rows.mapNotNull { it.minimum?.priceKopecks }.minOrNull()
         binding.resultCount.text = if (rows.isEmpty()) getString(R.string.results_none)
             else "Товаров: ${rows.size}" + (minimum?.let { " · от ${formatMoney(it)}" } ?: "")
@@ -411,6 +437,9 @@ class MainActivity : AppCompatActivity() {
     }
 
     override fun onDestroy() {
+        renderer.close()
+        renderWorker.shutdown()
+        if (::binding.isInitialized) binding.beerList.adapter = null
         if (::images.isInitialized) images.close()
         handler.removeCallbacks(updateSearch)
         super.onDestroy()

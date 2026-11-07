@@ -12,7 +12,11 @@ object PriceEngine {
             (storeIds.isEmpty() || it.store.id in storeIds) &&
                 (needle.isEmpty() || normalize(it.beer.title).contains(needle) || normalize(it.beer.brand).contains(needle))
         }
-        val rows = offers.groupBy { ProductIdentity.key(it.store.id, it.product ?: ProductDescriptor(it.beer.id)) }
+        val keys = HashMap<Pair<String, ProductDescriptor>, String>()
+        val rows = offers.groupBy {
+            val descriptor = it.product ?: ProductDescriptor(it.beer.id)
+            keys.getOrPut(it.store.id to descriptor) { ProductIdentity.key(it.store.id, descriptor) }
+        }
             .map { (key, entries) ->
                 val sorted = entries.sortedWith(order)
                 val fresh = sorted.filter { it.scope == PriceScope.STORE && !it.cached }
