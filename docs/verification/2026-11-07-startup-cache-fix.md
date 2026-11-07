@@ -39,7 +39,8 @@ LegacyCatalogMigration, CityScanCodec и совместимый SnapshotCodec.
 Итоговые результаты сборки и тестов записаны в startup-cache-final.log
 (локальная папка .superpowers/sdd/2026-11-04-citywide-catalog).
 
-Повторная проверка запуска на устройстве пользователя ещё не выполнена.
+После выпуска 1.4.3-test пользователь подтвердил: «всё работает и не вылетает»
+и запросил публикацию стабильного релиза. Подробный протокол устройства не предоставлен.
 
 Итог: 201 JVM-тест, 0 failures/errors/skips; assembleRelease и lintRelease
 успешны. apksigner verify подтвердил прежний сертификат
